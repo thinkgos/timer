@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/things-go/container/priorityqueue"
+	pq "github.com/things-go/container/priorityqueue"
 )
 
 type Delayed interface {
@@ -14,13 +14,13 @@ type Delayed interface {
 
 type DelayQueue struct {
 	mu     sync.Mutex
-	pq     *priorityqueue.Queue
+	pq     *pq.Queue
 	signal chan struct{}
 }
 
-func NewDelayQueue() *DelayQueue {
+func NewDelayQueue(opts ...pq.Option) *DelayQueue {
 	return &DelayQueue{
-		pq:     priorityqueue.New(),
+		pq:     pq.New(opts...),
 		signal: make(chan struct{}, 1),
 	}
 }
