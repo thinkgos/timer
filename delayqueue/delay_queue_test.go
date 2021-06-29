@@ -27,7 +27,7 @@ func (sf delay) DelayMs() int64 {
 	return atomic.LoadInt64(&sf.value) - nowMs()
 }
 
-func (sf delay) Compare(v1, v2 interface{}) int {
+func CompareDelay(v1, v2 interface{}) int {
 	vv1 := v1.(*delay)
 	vv2 := v2.(*delay)
 
@@ -41,7 +41,7 @@ func (sf delay) Compare(v1, v2 interface{}) int {
 }
 
 func TestDelayQueue(t *testing.T) {
-	dq := NewDelayQueue(priorityqueue.WithComparator(&delay{}))
+	dq := NewDelayQueue(priorityqueue.WithComparator(CompareDelay))
 
 	d1 := &delay{"d1", nowMs() + 1000}
 	d2 := &delay{"d2", nowMs() + 2000}
@@ -57,7 +57,7 @@ func TestDelayQueue(t *testing.T) {
 }
 
 func TestDelayQueue_Empty_Begin(t *testing.T) {
-	dq := NewDelayQueue(priorityqueue.WithComparator(&delay{}))
+	dq := NewDelayQueue(priorityqueue.WithComparator(CompareDelay))
 
 	go func() {
 		time.Sleep(time.Millisecond * 200)
@@ -76,7 +76,7 @@ func TestDelayQueue_Empty_Begin(t *testing.T) {
 }
 
 func TestDelayQueue_Cancel(t *testing.T) {
-	dq := NewDelayQueue(priorityqueue.WithComparator(&delay{}))
+	dq := NewDelayQueue(priorityqueue.WithComparator(CompareDelay))
 
 	d1 := &delay{"d1", nowMs() + 1000}
 	d2 := &delay{"d2", nowMs() + 2000}
@@ -98,7 +98,7 @@ func TestDelayQueue_Cancel(t *testing.T) {
 }
 
 func TestDelayQueue_Cancel_Empty_Begin(t *testing.T) {
-	dq := NewDelayQueue(priorityqueue.WithComparator(&delay{}))
+	dq := NewDelayQueue(priorityqueue.WithComparator(CompareDelay))
 
 	go func() {
 		time.Sleep(time.Millisecond * 500)

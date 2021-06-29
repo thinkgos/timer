@@ -1,0 +1,3 @@
+#!/bin/bash
+revive -config .revive.toml  -formatter friendly ./...
+golangci-lint run
