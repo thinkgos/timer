@@ -32,7 +32,7 @@ func (e *TaskEntry) nextEntry() *TaskEntry {
 	return nil
 }
 
-func (e *TaskEntry) Remove() {
+func (e *TaskEntry) removeSelf() {
 	// If remove is called when another thread is moving the entry from a task entry list to another,
 	// this may fail to remove the entry due to the change of value of list. Thus, we retry until the list becomes null.
 	// In a rare case, this thread sees null and exits the loop, but the other thread insert the entry to another list later.
@@ -64,7 +64,7 @@ func (sf *TaskEntry) hasCancelled() bool {
 
 func (sf *TaskEntry) Cancel() {
 	if sf.list != nil {
-		sf.Remove()
+		sf.removeSelf()
 		stdAtomic.StoreInt32(&sf.cancelled, 1)
 	}
 }

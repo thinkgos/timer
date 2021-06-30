@@ -27,7 +27,7 @@ func NewTaskList(counter *atomic.Int64) *TaskList {
 // Add a timer task entry to this list
 func (sf *TaskList) Add(e *TaskEntry) {
 	for done := false; !done; {
-		e.Remove()
+		e.removeSelf()
 		if e.list == nil {
 			sf.mu.Lock()
 			at := sf.root.prev
@@ -41,9 +41,7 @@ func (sf *TaskList) Add(e *TaskEntry) {
 			done = true
 			sf.mu.Unlock()
 		}
-
 	}
-
 }
 
 // Remove the specified timer task entry from this list
@@ -68,7 +66,8 @@ func (sf *TaskList) remove(e *TaskEntry) {
 func (sf *TaskList) Flush(f func(*TaskEntry)) {
 	sf.mu.Lock()
 	defer sf.mu.Unlock()
-	for e, temp := sf.root.next, (*TaskEntry)(nil); e != nil; e = temp {
+	var temp *TaskEntry
+	for e := sf.root.next; e != nil; e = temp {
 		temp = e.nextEntry()
 		sf.remove(e)
 		f(e)

@@ -44,7 +44,7 @@ func (sf *DelayQueue) Add(d Delayed) {
 	}
 }
 
-func (sf *DelayQueue) Pop(ctx context.Context) Delayed {
+func (sf *DelayQueue) Take(ctx context.Context) Delayed {
 	for {
 		sf.mu.Lock()
 		e := sf.pq.Peek()

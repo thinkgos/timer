@@ -47,11 +47,11 @@ func TestDelayQueue(t *testing.T) {
 	d2 := &delay{"d2", nowMs() + 2000}
 	dq.Add(d1)
 	dq.Add(d2)
-	v1 := dq.Pop(context.Background())
+	v1 := dq.Take(context.Background())
 	assert.Equal(t, "d1", v1.(*delay).name)
 	assert.LessOrEqual(t, v1.DelayMs(), int64(0))
 
-	v2 := dq.Pop(context.Background())
+	v2 := dq.Take(context.Background())
 	assert.Equal(t, "d2", v2.(*delay).name)
 	assert.LessOrEqual(t, v2.DelayMs(), int64(0))
 }
@@ -66,11 +66,11 @@ func TestDelayQueue_Empty_Begin(t *testing.T) {
 		dq.Add(d1)
 		dq.Add(d2)
 	}()
-	v1 := dq.Pop(context.Background())
+	v1 := dq.Take(context.Background())
 	assert.Equal(t, "d1", v1.(*delay).name)
 	assert.LessOrEqual(t, v1.DelayMs(), int64(0))
 
-	v2 := dq.Pop(context.Background())
+	v2 := dq.Take(context.Background())
 	assert.Equal(t, "d2", v2.(*delay).name)
 	assert.LessOrEqual(t, v2.DelayMs(), int64(0))
 }
@@ -85,14 +85,14 @@ func TestDelayQueue_Cancel(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*200)
 	defer cancel()
-	vxx := dq.Pop(ctx)
+	vxx := dq.Take(ctx)
 	assert.Nil(t, vxx)
 
-	v1 := dq.Pop(context.Background())
+	v1 := dq.Take(context.Background())
 	assert.Equal(t, "d1", v1.(*delay).name)
 	assert.LessOrEqual(t, v1.DelayMs(), int64(0))
 
-	v2 := dq.Pop(context.Background())
+	v2 := dq.Take(context.Background())
 	assert.Equal(t, "d2", v2.(*delay).name)
 	assert.LessOrEqual(t, v2.DelayMs(), int64(0))
 }
@@ -110,14 +110,14 @@ func TestDelayQueue_Cancel_Empty_Begin(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*200)
 	defer cancel()
-	vxx := dq.Pop(ctx)
+	vxx := dq.Take(ctx)
 	assert.Nil(t, vxx)
 
-	v1 := dq.Pop(context.Background())
+	v1 := dq.Take(context.Background())
 	assert.Equal(t, "d1", v1.(*delay).name)
 	assert.LessOrEqual(t, v1.DelayMs(), int64(0))
 
-	v2 := dq.Pop(context.Background())
+	v2 := dq.Take(context.Background())
 	assert.Equal(t, "d2", v2.(*delay).name)
 	assert.LessOrEqual(t, v2.DelayMs(), int64(0))
 }

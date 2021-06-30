@@ -26,7 +26,7 @@ func WithWheelSize(size int) Option {
 
 type Timer struct {
 	tickMs     int64
-	wheelSize  int
+	wheelSize  int // must pow of 2
 	counter    *atomic.Int64
 	delayQueue *delayqueue.DelayQueue
 	wheel      *Wheel
@@ -85,7 +85,7 @@ func (t *Timer) reinsert(entry *TaskEntry) {
 func (t *Timer) Start() {
 	go func() {
 		for {
-			d := t.delayQueue.Pop(t.ctx)
+			d := t.delayQueue.Take(t.ctx)
 			if d == nil {
 				break
 			}
