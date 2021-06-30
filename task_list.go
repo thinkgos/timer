@@ -22,8 +22,7 @@ func NewTaskList(counter *atomic.Int64) *TaskList {
 func (t *TaskList) Add(e *TaskEntry) {
 	t.Lock()
 	defer t.Unlock()
-	e.removeSelf()
-	t.PushElementBack(e)
+	t.PushBack(e)
 }
 
 // Set the bucket's expiration time
