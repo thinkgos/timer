@@ -20,7 +20,7 @@ type TaskEntry struct {
 	// follow The value stored with this element.
 	// 到期终止ms值
 	expirationMs int64
-	// job is the thing that want to run.
+	// job is the task that want to run.
 	job Job
 	// use goroutine
 	useGoroutine bool

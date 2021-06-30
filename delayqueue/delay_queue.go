@@ -61,14 +61,12 @@ func (sf *DelayQueue) Pop(ctx context.Context) Delayed {
 
 		tm := time.NewTimer(time.Duration(delay) * time.Millisecond)
 		select {
-		case <-sf.signal:
-			tm.Stop()
-			continue
 		case <-ctx.Done():
 			tm.Stop()
 			return nil
+		case <-sf.signal:
+			tm.Stop()
 		case <-tm.C:
-			continue
 		}
 	}
 }

@@ -1,6 +1,7 @@
 package timer
 
 import (
+	"log"
 	"sync/atomic"
 )
 
@@ -14,27 +15,32 @@ type Wheel struct {
 	overflowWheel *Wheel
 }
 
-func NewWheel(tm *Timer) *Wheel {
+func NewWheel(tm *Timer, startMs int64) *Wheel {
 	buckets := make([]*TaskList, tm.wheelSize)
 	for i := range buckets {
 		buckets[i] = NewTaskList(tm.counter)
 	}
 	return &Wheel{
-		Timer:   tm,
-		buckets: buckets,
+		Timer:       tm,
+		interval:    tm.tickMs * int64(tm.wheelSize),
+		currentTime: startMs - startMs%tm.tickMs,
+		buckets:     buckets,
 	}
 }
 
 func (tw *Wheel) Add(e *TaskEntry) bool {
-	expiration := e.expirationMs
+
 	if e.Cancelled() {
-		// Canceled
+		log.Println("1")
 		return false
 	}
+	expiration := e.expirationMs
 	if expiration < tw.currentTime+tw.tickMs { // Already expired
+		log.Println("2")
 		return false
 	}
 	if expiration < tw.currentTime+tw.interval {
+		log.Println("3")
 		// Put in its own bucket
 		virtualId := expiration / tw.tickMs
 		bucket := tw.buckets[int(virtualId)%tw.wheelSize]
@@ -46,9 +52,9 @@ func (tw *Wheel) Add(e *TaskEntry) bool {
 		}
 		return true
 	}
-
 	if tw.overflowWheel == nil {
-		tw.overflowWheel = NewWheel(tw.Timer)
+		log.Println("4")
+		tw.overflowWheel = NewWheel(tw.Timer, tw.currentTime)
 	}
 	return tw.overflowWheel.Add(e)
 }

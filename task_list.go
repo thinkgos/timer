@@ -56,11 +56,11 @@ func (l *TaskList) DelayMs() int64 {
 }
 
 func CompareTaskList(v1, v2 interface{}) int {
-	l1, l2 := v1.(*TaskList), v2.(*TaskList)
-	if l1.GetExpiration() < l2.GetExpiration() {
+	d1, d2 := v1.(*TaskList).GetExpiration(), v2.(*TaskList).GetExpiration()
+	if d1 < d2 {
 		return -1
 	}
-	if l1.GetExpiration() > l2.GetExpiration() {
+	if d1 > d2 {
 		return 1
 	}
 	return 0

@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	pq "github.com/things-go/container/priorityqueue"
 	"go.uber.org/atomic"
 
 	"github.com/things-go/timer/delayqueue"
@@ -24,15 +25,15 @@ func NewTimer(tickMs int64, wheelSize int) *Timer {
 		tickMs:     tickMs,
 		wheelSize:  wheelSize,
 		counter:    &atomic.Int64{},
-		delayQueue: delayqueue.NewDelayQueue(),
+		delayQueue: delayqueue.NewDelayQueue(pq.WithComparator(CompareTaskList)),
 	}
 
-	tm.wheel = NewWheel(tm)
+	tm.wheel = NewWheel(tm, NowMs())
 	return tm
 }
 
 func (t *Timer) AfterFunc(d time.Duration, f func()) *TaskEntry {
-	entry := NewTaskEntry(int64(d/time.Millisecond), f)
+	entry := NewTaskEntry(NowMs()+int64(d/time.Millisecond), f)
 	t.addTimerTaskEntry(entry)
 	return entry
 }
