@@ -38,7 +38,7 @@ func (tw *Wheel) Add(entry *TaskEntry) bool {
 	if expiration < tw.currentTime+tw.interval {
 		// Put in its own bucket
 		virtualId := expiration / tw.tickMs
-		bucket := tw.buckets[int(virtualId)&(tw.wheelSize-1)]
+		bucket := tw.buckets[int(virtualId)%tw.wheelSize]
 		bucket.Add(entry)
 
 		// Set the bucket expiration time
