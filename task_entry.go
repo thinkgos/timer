@@ -58,3 +58,19 @@ func (t *TaskEntry) removeSelf() {
 		t.list.remove(t)
 	}
 }
+
+// Next returns the next list element or nil.
+func (e *TaskEntry) Next() *TaskEntry {
+	if p := e.next; e.list != nil && p != &e.list.root {
+		return p
+	}
+	return nil
+}
+
+// Prev returns the previous list element or nil.
+func (e *TaskEntry) Prev() *TaskEntry {
+	if p := e.prev; e.list != nil && p != &e.list.root {
+		return p
+	}
+	return nil
+}

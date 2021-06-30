@@ -32,12 +32,8 @@ func NewTimer(tickMs int64, wheelSize int) *Timer {
 }
 
 func (t *Timer) AfterFunc(d time.Duration, f func()) *TaskEntry {
-	delayMs := int64(d / time.Millisecond)
-
-	entry := NewTaskEntry(delayMs, f)
-
+	entry := NewTaskEntry(int64(d/time.Millisecond), f)
 	t.addTimerTaskEntry(entry)
-
 	return entry
 }
 
@@ -52,6 +48,10 @@ func (t *Timer) addTimerTaskEntry(entry *TaskEntry) {
 	}
 }
 
+func (t *Timer) reinsert(entry *TaskEntry) {
+	t.addTimerTaskEntry(entry)
+}
+
 func (t *Timer) Start() {
 	go func() {
 		for {
@@ -61,7 +61,7 @@ func (t *Timer) Start() {
 			}
 			bucket := d.(*TaskList)
 			t.wheel.AdvanceClock(bucket.GetExpiration())
-			// bucket.Flush(t.reinsert)
+			bucket.Flush(t.reinsert)
 		}
 	}()
 }

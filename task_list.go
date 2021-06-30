@@ -8,14 +8,14 @@ import (
 )
 
 type TaskList struct {
-	root       *list
+	*list
 	expiration int64
 	sync.Mutex
 }
 
 func NewTaskList(counter *atomic.Int64) *TaskList {
 	return &TaskList{
-		root: newList(counter),
+		list: newList(counter),
 	}
 }
 
@@ -23,7 +23,7 @@ func (t *TaskList) Add(e *TaskEntry) {
 	t.Lock()
 	defer t.Unlock()
 	e.removeSelf()
-	t.root.PushElementBack(e)
+	t.PushElementBack(e)
 }
 
 // Set the bucket's expiration time
@@ -35,6 +35,17 @@ func (t *TaskList) SetExpiration(expirationMs int64) bool {
 // Get the bucket's expiration time
 func (l *TaskList) GetExpiration() int64 {
 	return stdAtomic.LoadInt64(&l.expiration)
+}
+
+// Remove all task entries and apply the supplied function to each of them
+func (l *TaskList) Flush(f func(entry *TaskEntry)) {
+	l.Lock()
+	defer l.Unlock()
+	for e := l.Front(); e != nil; e = e.Next() {
+		l.remove(e)
+		f(e)
+	}
+	l.SetExpiration(-1)
 }
 
 func (l *TaskList) DelayMs() int64 {
