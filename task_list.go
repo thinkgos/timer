@@ -68,7 +68,9 @@ func (sf *TaskList) remove(e *TaskEntry) {
 func (sf *TaskList) Flush(f func(*TaskEntry)) {
 	sf.mu.Lock()
 	defer sf.mu.Unlock()
-	for e := sf.root.next; e != nil; e = e.nextEntry() {
+	for e, temp := sf.root.next, (*TaskEntry)(nil); e != nil; e = temp {
+		temp = e.nextEntry()
+		sf.remove(e)
 		f(e)
 	}
 	sf.SetExpiration(-1)

@@ -54,17 +54,17 @@ func (t *TaskEntry) UseGoroutine() *TaskEntry {
 	return t
 }
 
-func (t *TaskEntry) Run() {
-	wrapRunJob(t.job)
+func (sf *TaskEntry) Run() {
+	wrapRunJob(sf.job)
 }
 
-func (t *TaskEntry) hasCancelled() bool {
-	return stdAtomic.LoadInt32(&t.cancelled) == 1
+func (sf *TaskEntry) hasCancelled() bool {
+	return stdAtomic.LoadInt32(&sf.cancelled) == 1
 }
 
 func (sf *TaskEntry) Cancel() {
 	if sf.list != nil {
-		sf.list.Remove(sf)
+		sf.Remove()
 		stdAtomic.StoreInt32(&sf.cancelled, 1)
 	}
 }
