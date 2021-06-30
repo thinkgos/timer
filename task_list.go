@@ -8,47 +8,79 @@ import (
 )
 
 type TaskList struct {
-	*list
+	root    TaskEntry     // sentinel list element, only &root, root.prev, and root.next are used
+	counter *atomic.Int64 // current list length excluding (this) sentinel element
+
 	expiration int64
-	sync.Mutex
+	mu         sync.Mutex
 }
 
 func NewTaskList(counter *atomic.Int64) *TaskList {
-	return &TaskList{
-		list: newList(counter),
+	tl := &TaskList{
+		counter: counter,
+	}
+	tl.root.next = &tl.root
+	tl.root.prev = &tl.root
+	return tl
+}
+
+// Add a timer task entry to this list
+func (sf *TaskList) Add(e *TaskEntry) {
+	sf.mu.Lock()
+	defer sf.mu.Unlock()
+	sf.remove(e) // remove e if it's on the list
+
+	at := sf.root.prev
+
+	e.prev = at
+	e.next = at.next
+	e.prev.next = e
+	e.next.prev = e
+	e.list = sf
+	sf.counter.Inc()
+}
+
+// Remove the specified timer task entry from this list
+func (sf *TaskList) Remove(e *TaskEntry) {
+	sf.mu.Lock()
+	defer sf.mu.Unlock()
+	sf.remove(e)
+}
+
+func (sf *TaskList) remove(e *TaskEntry) {
+	if e.list == sf {
+		e.prev.next = e.next
+		e.next.prev = e.prev
+		e.next = nil // avoid memory leaks
+		e.prev = nil // avoid memory leaks
+		e.list = nil
+		sf.counter.Dec()
 	}
 }
 
-func (t *TaskList) Add(e *TaskEntry) {
-	t.Lock()
-	defer t.Unlock()
-	t.PushBack(e)
+// Flush all task entries and apply the supplied function to each of them
+func (sf *TaskList) Flush(f func(*TaskEntry)) {
+	sf.mu.Lock()
+	defer sf.mu.Unlock()
+	for e := sf.root.next; e != nil; e = e.nextEntry() {
+		f(e)
+	}
+	sf.SetExpiration(-1)
 }
 
 // Set the bucket's expiration time
 // Returns true if the expiration time is changed
-func (t *TaskList) SetExpiration(expirationMs int64) bool {
-	return stdAtomic.SwapInt64(&t.expiration, expirationMs) != expirationMs
+func (sf *TaskList) SetExpiration(expirationMs int64) bool {
+	return stdAtomic.SwapInt64(&sf.expiration, expirationMs) != expirationMs
 }
 
 // Get the bucket's expiration time
-func (l *TaskList) GetExpiration() int64 {
-	return stdAtomic.LoadInt64(&l.expiration)
+func (sf *TaskList) GetExpiration() int64 {
+	return stdAtomic.LoadInt64(&sf.expiration)
 }
 
-// Remove all task entries and apply the supplied function to each of them
-func (l *TaskList) Flush(f func(entry *TaskEntry)) {
-	l.Lock()
-	defer l.Unlock()
-	for e := l.Front(); e != nil; e = e.Next() {
-		l.remove(e)
-		f(e)
-	}
-	l.SetExpiration(-1)
-}
-
-func (l *TaskList) DelayMs() int64 {
-	delay := l.GetExpiration() - NowMs()
+func (sf *TaskList) DelayMs() int64 {
+	delay := sf.GetExpiration() - NowMs()
 	if delay < 0 {
 		return 0
 	}

@@ -1,12 +1,8 @@
 package timer
 
-import (
-	"log"
-	"sync/atomic"
-)
-
 type Wheel struct {
 	*Timer
+	tickMs int64
 
 	interval    int64
 	currentTime int64
@@ -15,57 +11,58 @@ type Wheel struct {
 	overflowWheel *Wheel
 }
 
-func NewWheel(tm *Timer, startMs int64) *Wheel {
+func NewWheel(tm *Timer, tickMs int64, startMs int64) *Wheel {
 	buckets := make([]*TaskList, tm.wheelSize)
 	for i := range buckets {
 		buckets[i] = NewTaskList(tm.counter)
 	}
 	return &Wheel{
-		Timer:       tm,
-		interval:    tm.tickMs * int64(tm.wheelSize),
-		currentTime: startMs - startMs%tm.tickMs,
-		buckets:     buckets,
+		Timer:  tm,
+		tickMs: tickMs,
+
+		interval:      tickMs * int64(tm.wheelSize),
+		currentTime:   startMs - (startMs % tickMs),
+		buckets:       buckets,
+		overflowWheel: nil,
 	}
 }
 
-func (tw *Wheel) Add(e *TaskEntry) bool {
-
-	if e.Cancelled() {
-		log.Println("1")
+func (tw *Wheel) Add(entry *TaskEntry) bool {
+	if entry.hasCancelled() { // Canceled
 		return false
 	}
-	expiration := e.expirationMs
+	expiration := entry.expirationMs
 	if expiration < tw.currentTime+tw.tickMs { // Already expired
-		log.Println("2")
 		return false
 	}
 	if expiration < tw.currentTime+tw.interval {
-		log.Println("3")
 		// Put in its own bucket
 		virtualId := expiration / tw.tickMs
-		bucket := tw.buckets[int(virtualId)%tw.wheelSize]
-		bucket.Add(e)
+		bucket := tw.buckets[int(virtualId)&(tw.wheelSize-1)]
+		bucket.Add(entry)
 
 		// Set the bucket expiration time
 		if bucket.SetExpiration(virtualId * tw.tickMs) {
+			// The bucket needs to be enqueued because it was an expired bucket
+			// We only need to enqueue the bucket when its expiration time has changed, i.e. the wheel has advanced
+			// and the previous buckets gets reused; further calls to set the expiration within the same wheel cycle
+			// will pass in the same value and hence return false, thus the bucket with the same expiration will not
+			// be enqueued multiple times.
 			tw.delayQueue.Add(bucket)
 		}
 		return true
 	}
 	if tw.overflowWheel == nil {
-		log.Println("4")
-		tw.overflowWheel = NewWheel(tw.Timer, tw.currentTime)
+		tw.overflowWheel = NewWheel(tw.Timer, tw.interval, tw.currentTime)
 	}
-	return tw.overflowWheel.Add(e)
+	return tw.overflowWheel.Add(entry)
 }
 
 func (tw *Wheel) AdvanceClock(timeMs int64) {
-	currentTime := atomic.LoadInt64(&tw.currentTime)
 	if timeMs >= tw.currentTime+tw.tickMs {
-		currentTime = timeMs - (timeMs % tw.tickMs)
-		atomic.StoreInt64(&tw.currentTime, currentTime)
+		tw.currentTime = timeMs - (timeMs % tw.tickMs)
 		if tw.overflowWheel != nil {
-			tw.overflowWheel.AdvanceClock(currentTime)
+			tw.overflowWheel.AdvanceClock(tw.currentTime)
 		}
 	}
 }

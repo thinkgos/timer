@@ -10,6 +10,20 @@ import (
 	"github.com/things-go/timer/delayqueue"
 )
 
+type Option func(*Timer)
+
+func WithTickMs(tickMs int64) Option {
+	return func(t *Timer) {
+		t.tickMs = tickMs
+	}
+}
+
+func WithWheelSize(size int) Option {
+	return func(t *Timer) {
+		t.wheelSize = NextPowOf2(size)
+	}
+}
+
 type Timer struct {
 	tickMs     int64
 	wheelSize  int
@@ -20,28 +34,43 @@ type Timer struct {
 	cancel     context.CancelFunc
 }
 
-func NewTimer(tickMs int64, wheelSize int) *Timer {
-	tm := &Timer{
-		tickMs:     tickMs,
-		wheelSize:  wheelSize,
-		counter:    &atomic.Int64{},
+func NewTimer(opts ...Option) *Timer {
+	t := &Timer{
+		tickMs:     1,
+		wheelSize:  256,
+		counter:    atomic.NewInt64(0),
 		delayQueue: delayqueue.NewDelayQueue(pq.WithComparator(CompareTaskList)),
+		wheel:      nil,
 	}
+	for _, opt := range opts {
+		opt(t)
+	}
+	t.ctx, t.cancel = context.WithCancel(context.Background())
+	t.wheel = NewWheel(t, t.tickMs, NowMs())
+	return t
+}
 
-	tm.wheel = NewWheel(tm, NowMs())
-	return tm
+func (t *Timer) WheelSize() int {
+	return t.wheelSize
+}
+
+func (t *Timer) TickMs() int64 {
+	return t.tickMs
+}
+
+func (t *Timer) Len() int64 {
+	return t.counter.Load()
 }
 
 func (t *Timer) AfterFunc(d time.Duration, f func()) *TaskEntry {
-	entry := NewTaskEntry(NowMs()+int64(d/time.Millisecond), f)
+	entry := NewTaskEntry(int64(d/time.Millisecond), f)
 	t.addTimerTaskEntry(entry)
 	return entry
 }
 
 func (t *Timer) addTimerTaskEntry(entry *TaskEntry) {
 	if !t.wheel.Add(entry) {
-		// Already expired or cancelled
-		if !entry.Cancelled() {
+		if !entry.hasCancelled() {
 			go func() {
 				entry.Run()
 			}()
@@ -56,7 +85,7 @@ func (t *Timer) reinsert(entry *TaskEntry) {
 func (t *Timer) Start() {
 	go func() {
 		for {
-			d := t.delayQueue.Pop(context.Background())
+			d := t.delayQueue.Pop(t.ctx)
 			if d == nil {
 				break
 			}
@@ -71,8 +100,4 @@ func (t *Timer) Stop() {
 	if t.cancel != nil {
 		t.cancel()
 	}
-}
-
-func (t *Timer) Size() int64 {
-	return t.counter.Load()
 }

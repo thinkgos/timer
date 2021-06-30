@@ -1,9 +1,5 @@
 package timer
 
-import (
-	"time"
-)
-
 // Job job interface
 type Job interface {
 	Run()
@@ -15,17 +11,10 @@ type JobFunc func()
 // Run implement job interface
 func (f JobFunc) Run() { f() }
 
-func wrapJob(job Job) {
+// hold recover
+func wrapRunJob(job Job) {
 	defer func() {
 		_ = recover()
 	}()
 	job.Run()
-}
-
-type emptyJob struct{}
-
-func (emptyJob) Run() {}
-
-func NowMs() int64 {
-	return time.Now().UnixNano() / int64(time.Millisecond)
 }

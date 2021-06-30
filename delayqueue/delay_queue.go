@@ -13,9 +13,10 @@ type Delayed interface {
 }
 
 type DelayQueue struct {
-	mu     sync.Mutex
-	pq     *pq.Queue
-	signal chan struct{}
+	mu      sync.Mutex
+	pq      *pq.Queue
+	signal  chan struct{}
+	waiting bool
 }
 
 func NewDelayQueue(opts ...pq.Option) *DelayQueue {
@@ -26,12 +27,20 @@ func NewDelayQueue(opts ...pq.Option) *DelayQueue {
 }
 
 func (sf *DelayQueue) Add(d Delayed) {
+	var wakeup bool
+
 	sf.mu.Lock()
 	sf.pq.Add(d)
+	if sf.waiting && sf.pq.Peek().(Delayed) == d {
+		wakeup = true
+		sf.waiting = false
+	}
 	sf.mu.Unlock()
-	select {
-	case sf.signal <- struct{}{}:
-	default:
+	if wakeup {
+		select {
+		case sf.signal <- struct{}{}:
+		default:
+		}
 	}
 }
 
@@ -40,6 +49,7 @@ func (sf *DelayQueue) Pop(ctx context.Context) Delayed {
 		sf.mu.Lock()
 		e := sf.pq.Peek()
 		if e == nil {
+			sf.waiting = true
 			sf.mu.Unlock()
 
 			select {
@@ -57,8 +67,8 @@ func (sf *DelayQueue) Pop(ctx context.Context) Delayed {
 			sf.mu.Unlock()
 			return first
 		}
+		sf.waiting = true
 		sf.mu.Unlock()
-
 		tm := time.NewTimer(time.Duration(delay) * time.Millisecond)
 		select {
 		case <-ctx.Done():
