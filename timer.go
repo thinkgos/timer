@@ -8,6 +8,7 @@ import (
 	"go.uber.org/atomic"
 
 	"github.com/things-go/timer/delayqueue"
+	"github.com/things-go/timer/goroutine"
 )
 
 type Option func(*Timer)
@@ -71,9 +72,7 @@ func (t *Timer) AfterFunc(d time.Duration, f func()) *TaskEntry {
 func (t *Timer) addTimerTaskEntry(entry *TaskEntry) {
 	if !t.wheel.Add(entry) {
 		if !entry.hasCancelled() {
-			go func() {
-				entry.Run()
-			}()
+			goroutine.Go(entry.Run)
 		}
 	}
 }
