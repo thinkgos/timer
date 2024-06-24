@@ -2,10 +2,10 @@ package timer
 
 import (
 	"context"
+	"sync/atomic"
 	"time"
 
 	pq "github.com/things-go/container/priorityqueue"
-	"go.uber.org/atomic"
 
 	"github.com/things-go/timer/delayqueue"
 	"github.com/things-go/timer/goroutine"
@@ -39,7 +39,7 @@ func NewTimer(opts ...Option) *Timer {
 	t := &Timer{
 		tickMs:     1,
 		wheelSize:  256,
-		counter:    atomic.NewInt64(0),
+		counter:    &atomic.Int64{},
 		delayQueue: delayqueue.NewDelayQueue(pq.WithComparator(CompareTaskList)),
 		wheel:      nil,
 	}
@@ -47,7 +47,7 @@ func NewTimer(opts ...Option) *Timer {
 		opt(t)
 	}
 	t.ctx, t.cancel = context.WithCancel(context.Background())
-	t.wheel = NewWheel(t, t.tickMs, NowMs())
+	t.wheel = newTimeWheel(t, t.tickMs, NowMs())
 	return t
 }
 

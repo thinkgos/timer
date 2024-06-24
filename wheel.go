@@ -11,7 +11,7 @@ type Wheel struct {
 	overflowWheel *Wheel
 }
 
-func NewWheel(tm *Timer, tickMs int64, startMs int64) *Wheel {
+func newTimeWheel(tm *Timer, tickMs int64, startMs int64) *Wheel {
 	buckets := make([]*TaskList, tm.wheelSize)
 	for i := range buckets {
 		buckets[i] = NewTaskList(tm.counter)
@@ -53,7 +53,7 @@ func (tw *Wheel) Add(entry *TaskEntry) bool {
 		return true
 	}
 	if tw.overflowWheel == nil {
-		tw.overflowWheel = NewWheel(tw.Timer, tw.interval, tw.currentTime)
+		tw.overflowWheel = newTimeWheel(tw.Timer, tw.interval, tw.currentTime)
 	}
 	return tw.overflowWheel.Add(entry)
 }

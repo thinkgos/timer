@@ -2,9 +2,7 @@ package timer
 
 import (
 	"sync"
-	stdAtomic "sync/atomic"
-
-	"go.uber.org/atomic"
+	"sync/atomic"
 )
 
 type TaskList struct {
@@ -37,7 +35,7 @@ func (sf *TaskList) Add(e *TaskEntry) {
 			e.prev.next = e
 			e.next.prev = e
 			e.list = sf
-			sf.counter.Inc()
+			sf.counter.Add(1)
 			done = true
 			sf.mu.Unlock()
 		}
@@ -58,7 +56,7 @@ func (sf *TaskList) remove(e *TaskEntry) {
 		e.next = nil // avoid memory leaks
 		e.prev = nil // avoid memory leaks
 		e.list = nil
-		sf.counter.Dec()
+		sf.counter.Add(-1)
 	}
 }
 
@@ -78,12 +76,12 @@ func (sf *TaskList) Flush(f func(*TaskEntry)) {
 // Set the bucket's expiration time
 // Returns true if the expiration time is changed
 func (sf *TaskList) SetExpiration(expirationMs int64) bool {
-	return stdAtomic.SwapInt64(&sf.expiration, expirationMs) != expirationMs
+	return atomic.SwapInt64(&sf.expiration, expirationMs) != expirationMs
 }
 
 // Get the bucket's expiration time
 func (sf *TaskList) GetExpiration() int64 {
-	return stdAtomic.LoadInt64(&sf.expiration)
+	return atomic.LoadInt64(&sf.expiration)
 }
 
 func (sf *TaskList) DelayMs() int64 {
