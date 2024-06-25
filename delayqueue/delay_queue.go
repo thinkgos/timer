@@ -14,35 +14,35 @@ type Delayed interface {
 }
 
 type DelayQueue[T Delayed] struct {
-	mu      sync.Mutex
-	pq      *queue.PriorityQueue[T]
-	signal  chan struct{}
-	waiting bool
+	mu            sync.Mutex
+	priorityQueue *queue.PriorityQueue[T]
+	notify        chan struct{}
+	waiting       bool
 }
 
 func NewDelayQueue[T Delayed]() *DelayQueue[T] {
 	return &DelayQueue[T]{
-		pq:     queue.NewPriorityQueue[T](false),
-		signal: make(chan struct{}, 1),
+		priorityQueue: queue.NewPriorityQueue[T](false),
+		notify:        make(chan struct{}, 1),
 	}
 }
 
 func (dq *DelayQueue[T]) Add(val T) {
-	var wakeup bool
+	var wakeUp bool
 
 	dq.mu.Lock()
-	dq.pq.Add(val)
+	dq.priorityQueue.Add(val)
 	if dq.waiting {
-		first, exist := dq.pq.Peek()
+		first, exist := dq.priorityQueue.Peek()
 		if exist && first.CompareTo(val) == 0 {
-			wakeup = true
+			wakeUp = true
 			dq.waiting = false
 		}
 	}
 	dq.mu.Unlock()
-	if wakeup {
+	if wakeUp {
 		select {
-		case dq.signal <- struct{}{}:
+		case dq.notify <- struct{}{}:
 		default:
 		}
 	}
@@ -51,13 +51,13 @@ func (dq *DelayQueue[T]) Add(val T) {
 func (dq *DelayQueue[T]) Take(ctx context.Context) Delayed {
 	for {
 		dq.mu.Lock()
-		first, exist := dq.pq.Peek()
+		first, exist := dq.priorityQueue.Peek()
 		if !exist {
 			dq.waiting = true
 			dq.mu.Unlock()
 
 			select {
-			case <-dq.signal:
+			case <-dq.notify:
 				continue
 			case <-ctx.Done():
 				return nil
@@ -66,7 +66,7 @@ func (dq *DelayQueue[T]) Take(ctx context.Context) Delayed {
 
 		delay := first.DelayMs()
 		if delay <= 0 {
-			dq.pq.Poll()
+			dq.priorityQueue.Poll()
 			dq.mu.Unlock()
 			return first
 		}
@@ -77,7 +77,7 @@ func (dq *DelayQueue[T]) Take(ctx context.Context) Delayed {
 		case <-ctx.Done():
 			tm.Stop()
 			return nil
-		case <-dq.signal:
+		case <-dq.notify:
 			tm.Stop()
 		case <-tm.C:
 		}

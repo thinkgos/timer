@@ -19,12 +19,12 @@ type delay struct {
 	value int64
 }
 
-func (sf delay) Value() int64 {
-	return atomic.LoadInt64(&sf.value)
+func (d delay) Value() int64 {
+	return atomic.LoadInt64(&d.value)
 }
 
-func (sf delay) DelayMs() int64 {
-	return atomic.LoadInt64(&sf.value) - nowMs()
+func (d delay) DelayMs() int64 {
+	return atomic.LoadInt64(&d.value) - nowMs()
 }
 
 func (v1 *delay) CompareTo(v2 queue.Comparable) int {
