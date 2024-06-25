@@ -5,8 +5,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	pq "github.com/things-go/container/priorityqueue"
-
 	"github.com/things-go/timer/delayqueue"
 	"github.com/things-go/timer/goroutine"
 )
@@ -29,7 +27,7 @@ type Timer struct {
 	tickMs     int64
 	wheelSize  int // must pow of 2
 	counter    *atomic.Int64
-	delayQueue *delayqueue.DelayQueue
+	delayQueue *delayqueue.DelayQueue[*TaskList]
 	wheel      *Wheel
 	ctx        context.Context
 	cancel     context.CancelFunc
@@ -40,7 +38,7 @@ func NewTimer(opts ...Option) *Timer {
 		tickMs:     1,
 		wheelSize:  256,
 		counter:    &atomic.Int64{},
-		delayQueue: delayqueue.NewDelayQueue(pq.WithComparator(CompareTaskList)),
+		delayQueue: delayqueue.NewDelayQueue[*TaskList](),
 		wheel:      nil,
 	}
 	for _, opt := range opts {

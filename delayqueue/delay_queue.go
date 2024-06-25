@@ -5,76 +5,79 @@ import (
 	"sync"
 	"time"
 
-	pq "github.com/things-go/container/priorityqueue"
+	"github.com/things-go/timer/queue"
 )
 
 type Delayed interface {
 	DelayMs() int64
+	queue.Comparable
 }
 
-type DelayQueue struct {
+type DelayQueue[T Delayed] struct {
 	mu      sync.Mutex
-	pq      *pq.Queue
+	pq      *queue.PriorityQueue[T]
 	signal  chan struct{}
 	waiting bool
 }
 
-func NewDelayQueue(opts ...pq.Option) *DelayQueue {
-	return &DelayQueue{
-		pq:     pq.New(opts...),
+func NewDelayQueue[T Delayed]() *DelayQueue[T] {
+	return &DelayQueue[T]{
+		pq:     queue.NewPriorityQueue[T](false),
 		signal: make(chan struct{}, 1),
 	}
 }
 
-func (sf *DelayQueue) Add(d Delayed) {
+func (dq *DelayQueue[T]) Add(val T) {
 	var wakeup bool
 
-	sf.mu.Lock()
-	sf.pq.Add(d)
-	if sf.waiting && sf.pq.Peek().(Delayed) == d {
-		wakeup = true
-		sf.waiting = false
+	dq.mu.Lock()
+	dq.pq.Add(val)
+	if dq.waiting {
+		first, exist := dq.pq.Peek()
+		if exist && first.CompareTo(val) == 0 {
+			wakeup = true
+			dq.waiting = false
+		}
 	}
-	sf.mu.Unlock()
+	dq.mu.Unlock()
 	if wakeup {
 		select {
-		case sf.signal <- struct{}{}:
+		case dq.signal <- struct{}{}:
 		default:
 		}
 	}
 }
 
-func (sf *DelayQueue) Take(ctx context.Context) Delayed {
+func (dq *DelayQueue[T]) Take(ctx context.Context) Delayed {
 	for {
-		sf.mu.Lock()
-		e := sf.pq.Peek()
-		if e == nil {
-			sf.waiting = true
-			sf.mu.Unlock()
+		dq.mu.Lock()
+		first, exist := dq.pq.Peek()
+		if !exist {
+			dq.waiting = true
+			dq.mu.Unlock()
 
 			select {
-			case <-sf.signal:
+			case <-dq.signal:
 				continue
 			case <-ctx.Done():
 				return nil
 			}
 		}
 
-		first := e.(Delayed)
 		delay := first.DelayMs()
 		if delay <= 0 {
-			sf.pq.Poll()
-			sf.mu.Unlock()
+			dq.pq.Poll()
+			dq.mu.Unlock()
 			return first
 		}
-		sf.waiting = true
-		sf.mu.Unlock()
+		dq.waiting = true
+		dq.mu.Unlock()
 		tm := time.NewTimer(time.Duration(delay) * time.Millisecond)
 		select {
 		case <-ctx.Done():
 			tm.Stop()
 			return nil
-		case <-sf.signal:
+		case <-dq.signal:
 			tm.Stop()
 		case <-tm.C:
 		}

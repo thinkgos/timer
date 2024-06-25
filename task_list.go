@@ -3,6 +3,8 @@ package timer
 import (
 	"sync"
 	"sync/atomic"
+
+	"github.com/things-go/timer/queue"
 )
 
 type TaskList struct {
@@ -90,6 +92,18 @@ func (sf *TaskList) DelayMs() int64 {
 		return 0
 	}
 	return delay
+}
+
+func (v1 *TaskList) CompareTo(v2 queue.Comparable) int {
+	d1, d2 := v1.GetExpiration(), v2.(*TaskList).GetExpiration()
+	if d1 < d2 {
+		return -1
+	}
+	if d1 > d2 {
+		return 1
+	}
+	return 0
+
 }
 
 func CompareTaskList(v1, v2 interface{}) int {

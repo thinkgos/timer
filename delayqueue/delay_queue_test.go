@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/things-go/container/priorityqueue"
+	"github.com/things-go/timer/queue"
 )
 
 func nowMs() int64 {
@@ -27,6 +27,18 @@ func (sf delay) DelayMs() int64 {
 	return atomic.LoadInt64(&sf.value) - nowMs()
 }
 
+func (v1 *delay) CompareTo(v2 queue.Comparable) int {
+	vv2 := v2.(*delay)
+
+	if v1.Value() < vv2.Value() {
+		return -1
+	}
+	if v1.Value() > vv2.Value() {
+		return 1
+	}
+	return 0
+}
+
 func CompareDelay(v1, v2 interface{}) int {
 	vv1 := v1.(*delay)
 	vv2 := v2.(*delay)
@@ -41,7 +53,7 @@ func CompareDelay(v1, v2 interface{}) int {
 }
 
 func TestDelayQueue(t *testing.T) {
-	dq := NewDelayQueue(priorityqueue.WithComparator(CompareDelay))
+	dq := NewDelayQueue[*delay]()
 
 	d1 := &delay{"d1", nowMs() + 1000}
 	d2 := &delay{"d2", nowMs() + 2000}
@@ -57,7 +69,7 @@ func TestDelayQueue(t *testing.T) {
 }
 
 func TestDelayQueue_Empty_Begin(t *testing.T) {
-	dq := NewDelayQueue(priorityqueue.WithComparator(CompareDelay))
+	dq := NewDelayQueue[*delay]()
 
 	go func() {
 		time.Sleep(time.Millisecond * 200)
@@ -76,7 +88,7 @@ func TestDelayQueue_Empty_Begin(t *testing.T) {
 }
 
 func TestDelayQueue_Cancel(t *testing.T) {
-	dq := NewDelayQueue(priorityqueue.WithComparator(CompareDelay))
+	dq := NewDelayQueue[*delay]()
 
 	d1 := &delay{"d1", nowMs() + 1000}
 	d2 := &delay{"d2", nowMs() + 2000}
@@ -98,7 +110,7 @@ func TestDelayQueue_Cancel(t *testing.T) {
 }
 
 func TestDelayQueue_Cancel_Empty_Begin(t *testing.T) {
-	dq := NewDelayQueue(priorityqueue.WithComparator(CompareDelay))
+	dq := NewDelayQueue[*delay]()
 
 	go func() {
 		time.Sleep(time.Millisecond * 500)
