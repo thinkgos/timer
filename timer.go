@@ -41,7 +41,7 @@ func NewTimer(opts ...Option) *Timer {
 		wheelSize:   32,
 		taskCounter: &atomic.Int64{},
 		delayQueue:  delayqueue.NewDelayQueue[*Spoke](),
-		goPool:      DefaultGoPool{},
+		goPool:      InternalGoPool{},
 	}
 	for _, opt := range opts {
 		opt(t)
@@ -53,7 +53,7 @@ func NewTimer(opts ...Option) *Timer {
 		panic("timer: wheel size must be greater than 0")
 	}
 	t.ctx, t.cancel = context.WithCancel(context.Background())
-	t.wheel = newTimingWheel(t, t.tickMs, NowMs())
+	t.wheel = newTimingWheel(t, t.tickMs, time.Now().UnixMilli())
 	return t
 }
 

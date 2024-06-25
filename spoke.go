@@ -3,6 +3,7 @@ package timer
 import (
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/things-go/timer/queue"
 )
@@ -86,7 +87,7 @@ func (s *Spoke) SetExpiration(expirationMs int64) bool {
 func (s *Spoke) GetExpiration() int64 { return s.expiration.Load() }
 
 func (s *Spoke) DelayMs() int64 {
-	delay := s.GetExpiration() - NowMs()
+	delay := s.GetExpiration() - time.Now().UnixMilli()
 	if delay < 0 {
 		return 0
 	}

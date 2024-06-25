@@ -1,9 +1,5 @@
 package timer
 
-import (
-	"time"
-)
-
 // Job job interface
 type Job interface {
 	Run()
@@ -23,14 +19,10 @@ type EmptyJob struct{}
 
 func (EmptyJob) Run() {}
 
-type DefaultGoPool struct{}
+type InternalGoPool struct{}
 
-func (DefaultGoPool) Go(f func()) {
+func (InternalGoPool) Go(f func()) {
 	go f()
-}
-
-func NowMs() int64 {
-	return time.Now().UnixNano() / int64(time.Millisecond)
 }
 
 func IsPowOf2(x int) bool {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"sync/atomic"
+	"time"
 )
 
 // TaskEntry 是双向链表的一个元素.
@@ -45,7 +46,7 @@ func (e *TaskEntry) removeSelf() {
 func NewTaskEntry(delayMs int64) *TaskEntry {
 	return &TaskEntry{
 		delayMs:      delayMs,
-		expirationMs: delayMs + NowMs(),
+		expirationMs: delayMs + time.Now().UnixMilli(),
 		job:          EmptyJob{},
 	}
 }
@@ -63,7 +64,7 @@ func (t *TaskEntry) WithJob(j Job) *TaskEntry {
 func NewTaskEntryFunc(delayMs int64, f func()) *TaskEntry {
 	return &TaskEntry{
 		delayMs:      delayMs,
-		expirationMs: delayMs + NowMs(),
+		expirationMs: delayMs + time.Now().UnixMilli(),
 		job:          JobFunc(f),
 	}
 }
