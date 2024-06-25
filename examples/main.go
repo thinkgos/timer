@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"sync"
 	"time"
 
@@ -11,11 +11,11 @@ import (
 func main() {
 	t := timer.NewTimer()
 	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 100; i++ {
 		wg.Add(1)
 		index := i
-		t.AfterFunc(time.Duration(i)*time.Second, func() {
-			log.Printf("timer task %d is executed\n", index)
+		t.AfterFunc(time.Duration(i)*time.Second+time.Duration(i)*10*time.Millisecond, func() {
+			fmt.Printf("%s: timer task %d is executed, remain task: %d\n", time.Now().String(), index, t.TaskCounter())
 			wg.Done()
 		})
 	}

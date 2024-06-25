@@ -1,30 +1,29 @@
 package timer
 
 import (
-	stdAtomic "sync/atomic"
+	"fmt"
+	"os"
+	"sync/atomic"
 )
 
-// TaskEntry consists of a schedule and the func to execute on that schedule.
-// TaskEntry is an element of a linked list.
+// TaskEntry 是双向链表的一个元素.
 type TaskEntry struct {
-	// nextEntry and previous pointers in the doubly-linked list of elements.
+	// next and previous pointers in the doubly-linked list of elements.
 	// To simplify the implementation, internally a list l is implemented
 	// as a ring, such that &l.root is both the next element of the last
 	// list element (l.Back()) and the previous element of the first list
 	// element (l.Front()).
 	prev, next *TaskEntry
-	// The list to which this element belongs.
-	list *TaskList
+	list       *Spoke // 此元素所属的列表
 
 	// follow The value stored with this element.
-	delayMs      int64
-	expirationMs int64
-	job          Job
-	useGoroutine int32
-	cancelled    int32
+	delayMs      int64       // 延迟多少ms
+	expirationMs int64       // 到期时间, 绝对时间, 单位: ms
+	job          Job         // 任务
+	cancelled    atomic.Bool // 是否取消
 }
 
-// nextEntry returns the next list element or nil.
+// nextEntry 返回列表上的下一项, 如果没有返回nil
 func (e *TaskEntry) nextEntry() *TaskEntry {
 	if p := e.next; e.list != nil && p != &e.list.root {
 		return p
@@ -32,6 +31,7 @@ func (e *TaskEntry) nextEntry() *TaskEntry {
 	return nil
 }
 
+// TODO: 优化
 func (e *TaskEntry) removeSelf() {
 	// If remove is called when another thread is moving the entry from a task entry list to another,
 	// this may fail to remove the entry due to the change of value of list. Thus, we retry until the list becomes null.
@@ -41,7 +41,26 @@ func (e *TaskEntry) removeSelf() {
 	}
 }
 
-func NewTaskEntry(delayMs int64, f func()) *TaskEntry {
+// NewTaskEntry 创建一个空job任务条目
+func NewTaskEntry(delayMs int64) *TaskEntry {
+	return &TaskEntry{
+		delayMs:      delayMs,
+		expirationMs: delayMs + NowMs(),
+		job:          EmptyJob{},
+	}
+}
+
+func (t *TaskEntry) WithJobFunc(f func()) *TaskEntry {
+	t.job = JobFunc(f)
+	return t
+}
+
+func (t *TaskEntry) WithJob(j Job) *TaskEntry {
+	t.job = j
+	return t
+}
+
+func NewTaskEntryFunc(delayMs int64, f func()) *TaskEntry {
 	return &TaskEntry{
 		delayMs:      delayMs,
 		expirationMs: delayMs + NowMs(),
@@ -49,22 +68,22 @@ func NewTaskEntry(delayMs int64, f func()) *TaskEntry {
 	}
 }
 
-func (t *TaskEntry) UseGoroutine() *TaskEntry {
-	stdAtomic.StoreInt32(&t.useGoroutine, 1)
-	return t
+func (t *TaskEntry) isCancelled() bool { return t.cancelled.Load() }
+
+func (t *TaskEntry) Run() {
+	// hold recover
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Fprintf(os.Stderr, "timer: Recovered from panic: %v", err)
+		}
+	}()
+	t.job.Run()
 }
 
-func (sf *TaskEntry) Run() {
-	wrapRunJob(sf.job)
-}
-
-func (sf *TaskEntry) hasCancelled() bool {
-	return stdAtomic.LoadInt32(&sf.cancelled) == 1
-}
-
-func (sf *TaskEntry) Cancel() {
-	if sf.list != nil {
-		sf.removeSelf()
-		stdAtomic.StoreInt32(&sf.cancelled, 1)
+// TODO: 优化
+func (t *TaskEntry) Cancel() {
+	if t.list != nil {
+		t.removeSelf()
+		t.cancelled.Store(true)
 	}
 }

@@ -4,6 +4,31 @@ import (
 	"time"
 )
 
+// Job job interface
+type Job interface {
+	Run()
+}
+
+type GoPool interface {
+	Go(f func())
+}
+
+// JobFunc job function
+type JobFunc func()
+
+// Run implement job interface
+func (f JobFunc) Run() { f() }
+
+type EmptyJob struct{}
+
+func (EmptyJob) Run() {}
+
+type DefaultGoPool struct{}
+
+func (DefaultGoPool) Go(f func()) {
+	go f()
+}
+
 func NowMs() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }
