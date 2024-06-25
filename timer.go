@@ -61,22 +61,26 @@ func (t *Timer) TickMs() int64      { return t.tickMs }
 func (t *Timer) WheelSize() int     { return t.wheelSize }
 func (t *Timer) TaskCounter() int64 { return t.taskCounter.Load() }
 
-func (t *Timer) AfterFunc(d time.Duration, f func()) *TaskEntry {
-	e := NewTaskEntry(int64(d / time.Millisecond)).WithJobFunc(f)
-	t.AddTask(e)
-	return e
+func (t *Timer) AfterFunc(d time.Duration, f func()) *Task {
+	task := NewTask(int64(d / time.Millisecond)).WithJobFunc(f)
+	t.AddTask(task)
+	return task
 }
 
-func (t *Timer) AddTask(e *TaskEntry) {
-	if !t.wheel.Add(e) {
-		if !e.isCancelled() {
-			t.goPool.Go(e.Run)
+func (t *Timer) AddTask(task *Task) {
+	if !t.wheel.Add(task) {
+		if !task.cancelled() {
+			t.goPool.Go(task.Run)
 		}
 	}
 }
 
-func (t *Timer) reinsert(entry *TaskEntry) {
-	t.AddTask(entry)
+func (t *Timer) addToDelayQueue(spoke *Spoke) {
+	t.delayQueue.Add(spoke)
+}
+
+func (t *Timer) reinsert(task *Task) {
+	t.AddTask(task)
 }
 
 func (t *Timer) Start() {
