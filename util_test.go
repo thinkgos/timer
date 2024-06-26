@@ -22,14 +22,14 @@ func ranges(start, end int) []int {
 	return res
 }
 
-func TestIsPowOf2(t *testing.T) {
+func Test_IsPowOf2(t *testing.T) {
 	for _, v := range ranges(0, math.MaxInt8) {
 		require.True(t, IsPowOf2((int(math.Pow(2, float64(v))))), v)
 	}
 	require.False(t, IsPowOf2(100))
 }
 
-func TestNextPowOf2(t *testing.T) {
+func Test_NextPowOf2(t *testing.T) {
 	for _, v := range ranges(3, math.MaxInt16) {
 		want := int(math.Pow(2, float64(v)))
 		got := NextPowOf2(want - 2)

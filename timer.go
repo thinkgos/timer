@@ -8,6 +8,15 @@ import (
 	"github.com/things-go/timer/delayqueue"
 )
 
+type GoPool interface {
+	Go(f func())
+}
+type goroutine struct{}
+
+func (goroutine) Go(f func()) {
+	go f()
+}
+
 type Option func(*Timer)
 
 // WithTickMs 设置基本时间跨度
@@ -42,7 +51,7 @@ func NewTimer(opts ...Option) *Timer {
 		wheelSize:   32,
 		taskCounter: atomic.Int64{},
 		delayQueue:  delayqueue.NewDelayQueue[*Spoke](),
-		goPool:      InternalGoPool{},
+		goPool:      goroutine{},
 		closed:      true,
 	}
 	for _, opt := range opts {

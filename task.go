@@ -7,6 +7,21 @@ import (
 	"time"
 )
 
+// Job job interface
+type Job interface {
+	Run()
+}
+
+// JobFunc job function
+type JobFunc func()
+
+// Run implement job interface
+func (f JobFunc) Run() { f() }
+
+type EmptyJob struct{}
+
+func (EmptyJob) Run() {}
+
 // Task 是双向链表的一个元素.
 type Task struct {
 	// next and previous pointers in the doubly-linked list of elements.

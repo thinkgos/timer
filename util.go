@@ -1,30 +1,5 @@
 package timer
 
-// Job job interface
-type Job interface {
-	Run()
-}
-
-type GoPool interface {
-	Go(f func())
-}
-
-// JobFunc job function
-type JobFunc func()
-
-// Run implement job interface
-func (f JobFunc) Run() { f() }
-
-type EmptyJob struct{}
-
-func (EmptyJob) Run() {}
-
-type InternalGoPool struct{}
-
-func (InternalGoPool) Go(f func()) {
-	go f()
-}
-
 func IsPowOf2(x int) bool {
 	return (x & (x - 1)) == 0
 }
