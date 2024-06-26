@@ -23,8 +23,11 @@ func ranges(start, end int) []int {
 }
 
 func Test_IsPowOf2(t *testing.T) {
+	const intSize = 32 << (^uint(0) >> 63)
+	t.Log(intSize)
 	for _, v := range ranges(0, math.MaxInt8) {
-		require.True(t, IsPowOf2((int(math.Pow(2, float64(v))))), v)
+		vv := int(math.Pow(2, float64(v)))
+		require.True(t, IsPowOf2(vv), vv, v)
 	}
 	require.False(t, IsPowOf2(100))
 }
