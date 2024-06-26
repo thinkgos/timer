@@ -23,9 +23,7 @@ func ranges(start, end int) []int {
 }
 
 func Test_IsPowOf2(t *testing.T) {
-	const intSize = 32 << (^uint(0) >> 63)
-	t.Log(intSize)
-	for _, v := range ranges(0, math.MaxInt8) {
+	for _, v := range ranges(0, 62) {
 		vv := int(math.Pow(2, float64(v)))
 		require.True(t, IsPowOf2(vv), "%d - %d", vv, v)
 	}
@@ -33,7 +31,7 @@ func Test_IsPowOf2(t *testing.T) {
 }
 
 func Test_NextPowOf2(t *testing.T) {
-	for _, v := range ranges(3, math.MaxInt16) {
+	for _, v := range ranges(3, 62) {
 		want := int(math.Pow(2, float64(v)))
 		got := NextPowOf2(want - 2)
 		require.Equal(t, want, got)
