@@ -5,7 +5,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/things-go/timer/queue"
+	"github.com/thinkgos/timer/queue"
 )
 
 type Spoke struct {

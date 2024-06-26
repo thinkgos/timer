@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/things-go/timer"
+	"github.com/thinkgos/timer"
 )
 
 func main() {

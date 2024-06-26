@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/things-go/timer/queue"
+	"github.com/thinkgos/timer/queue"
 )
 
 type delay struct {

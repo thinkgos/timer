@@ -2,12 +2,12 @@
 
 Go implementation of Kafka's Hierarchical Timing Wheels.
 
-[![Go.Dev reference](https://img.shields.io/badge/go.dev-reference-blue?logo=go&logoColor=white)](https://pkg.go.dev/github.com/things-go/timer?tab=doc)
-[![codecov](https://codecov.io/gh/things-go/timer/branch/main/graph/badge.svg)](https://codecov.io/gh/things-go/timer)
-[![Tests](https://github.com/things-go/timer/actions/workflows/ci.yml/badge.svg)](https://github.com/things-go/timer/actions/workflows/ci.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/things-go/timer)](https://goreportcard.com/report/github.com/things-go/timer)
-[![Licence](https://img.shields.io/github/license/things-go/timer)](https://raw.githubusercontent.com/things-go/timer/main/LICENSE)
-[![Tag](https://img.shields.io/github/v/tag/things-go/timer)](https://github.com/things-go/timer/tags)
+[![Go.Dev reference](https://img.shields.io/badge/go.dev-reference-blue?logo=go&logoColor=white)](https://pkg.go.dev/github.com/thinkgos/timer?tab=doc)
+[![codecov](https://codecov.io/gh/thinkgos/timer/branch/main/graph/badge.svg)](https://codecov.io/gh/thinkgos/timer)
+[![Tests](https://github.com/thinkgos/timer/actions/workflows/ci.yml/badge.svg)](https://github.com/thinkgos/timer/actions/workflows/ci.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/thinkgos/timer)](https://goreportcard.com/report/github.com/thinkgos/timer)
+[![Licence](https://img.shields.io/github/license/thinkgos/timer)](https://raw.githubusercontent.com/thinkgos/timer/main/LICENSE)
+[![Tag](https://img.shields.io/github/v/tag/thinkgos/timer)](https://github.com/thinkgos/timer/tags)
 
 ## Usage
 
@@ -16,13 +16,13 @@ Go implementation of Kafka's Hierarchical Timing Wheels.
 Use go get.
 
 ```bash
-    go get github.com/things-go/timer
+    go get github.com/thinkgos/timer
 ```
 
 Then import the package into your own code.
 
 ```bash
-    import "github.com/things-go/timer"
+    import "github.com/thinkgos/timer"
 ```
 
 ### Example
@@ -36,7 +36,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/things-go/timer"
+	"github.com/thinkgos/timer"
 )
 
 func main() {

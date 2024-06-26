@@ -1,4 +1,4 @@
-module github.com/things-go/timer
+module github.com/thinkgos/timer
 
 go 1.21
 

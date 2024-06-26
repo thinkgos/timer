@@ -5,7 +5,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/things-go/timer/delayqueue"
+	"github.com/thinkgos/timer/delayqueue"
 )
 
 type GoPool interface {
