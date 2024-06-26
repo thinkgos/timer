@@ -38,8 +38,8 @@ func (v1 *delay) CompareTo(v2 queue.Comparable) int {
 func Test_DelayQueue(t *testing.T) {
 	dq := NewDelayQueue[*delay]()
 
-	d1 := &delay{"d1", time.Now().UnixMilli() + 1000}
-	d2 := &delay{"d2", time.Now().UnixMilli() + 2000}
+	d1 := &delay{"d1", time.Now().UnixMilli() + 100}
+	d2 := &delay{"d2", time.Now().UnixMilli() + 200}
 	dq.Add(d1)
 	dq.Add(d2)
 	v1, exit := dq.Take(nil)
@@ -57,16 +57,24 @@ func Test_DelayQueue_Empty_Begin(t *testing.T) {
 	dq := NewDelayQueue[*delay]()
 
 	go func() {
-		time.Sleep(time.Millisecond * 200)
-		d1 := &delay{"d1", time.Now().UnixMilli() + 1000}
-		d2 := &delay{"d2", time.Now().UnixMilli() + 2000}
+		time.Sleep(time.Millisecond * 20)
+		d1 := &delay{"d1", time.Now().UnixMilli() + 100}
+		d2 := &delay{"d2", time.Now().UnixMilli() + 200}
+		d3 := &delay{"d3", time.Now().UnixMilli() + 100}
 		dq.Add(d1)
 		dq.Add(d2)
+		dq.Add(d3)
 	}()
+
 	v1, exit := dq.Take(nil)
 	require.False(t, exit)
 	assert.Equal(t, "d1", v1.name)
 	assert.LessOrEqual(t, v1.DelayMs(), int64(0))
+
+	v3, exit := dq.Take(nil)
+	require.False(t, exit)
+	assert.Equal(t, "d3", v3.name)
+	assert.LessOrEqual(t, v3.DelayMs(), int64(0))
 
 	v2, exit := dq.Take(nil)
 	require.False(t, exit)
@@ -77,8 +85,8 @@ func Test_DelayQueue_Empty_Begin(t *testing.T) {
 func Test_DelayQueue_Quit(t *testing.T) {
 	dq := NewDelayQueue[*delay]()
 
-	d1 := &delay{"d1", time.Now().UnixMilli() + 1000}
-	d2 := &delay{"d2", time.Now().UnixMilli() + 2000}
+	d1 := &delay{"d1", time.Now().UnixMilli() + 100}
+	d2 := &delay{"d2", time.Now().UnixMilli() + 200}
 	dq.Add(d1)
 	dq.Add(d2)
 
@@ -103,9 +111,9 @@ func Test_DelayQueue_Quit_Empty_Begin(t *testing.T) {
 	dq := NewDelayQueue[*delay]()
 
 	go func() {
-		time.Sleep(time.Millisecond * 500)
-		d1 := &delay{"d1", time.Now().UnixMilli() + 1000}
-		d2 := &delay{"d2", time.Now().UnixMilli() + 2000}
+		time.Sleep(time.Millisecond * 50)
+		d1 := &delay{"d1", time.Now().UnixMilli() + 100}
+		d2 := &delay{"d2", time.Now().UnixMilli() + 200}
 		dq.Add(d1)
 		dq.Add(d2)
 	}()

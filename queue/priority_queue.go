@@ -64,11 +64,9 @@ func (pq *PriorityQueue[T]) Remove(val T) {
 }
 
 func (pq *PriorityQueue[T]) indexOf(val T) int {
-	if pq.Len() > 0 {
-		for i := 0; i < pq.Len(); i++ {
-			if val.CompareTo(pq.data.Items[i]) == 0 {
-				return i
-			}
+	for i := 0; i < pq.Len(); i++ {
+		if val.CompareTo(pq.data.Items[i]) == 0 {
+			return i
 		}
 	}
 	return -1

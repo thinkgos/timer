@@ -7,21 +7,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestPriorityQueueLen(t *testing.T) {
+func Test_PriorityQueue_Len(t *testing.T) {
 	// init 3 elements
-	q := NewPriorityQueue[Int](false, 5, 6, 7)
-
-	require.Equal(t, 3, q.Len())
+	q := NewPriorityQueue[Int](false, 5, 6, 7, 8, 9, 10)
+	require.Equal(t, 6, q.Len())
 	require.False(t, q.IsEmpty())
-
 	// remove one element
-	t.Log(q.indexOf(6))
-	q.Remove(6)
-	require.Equal(t, 2, q.Len())
+	t.Log(q.indexOf(7))
+	q.Remove(7)
+	require.Equal(t, 5, q.Len())
 
 	// remove one element not exist
 	q.Remove(10000)
-	require.Equal(t, 2, q.Len())
+	require.Equal(t, 5, q.Len())
 
 	// Clear all elements
 	q.Clear()
@@ -32,7 +30,7 @@ func TestPriorityQueueLen(t *testing.T) {
 	q.Remove(10000)
 }
 
-func TestPriorityQueueValue(t *testing.T) {
+func Test_PriorityQueue_Value(t *testing.T) {
 	// create priority queue
 	q := NewPriorityQueue[Int](false)
 	q.Add(15)
@@ -72,19 +70,30 @@ func TestPriorityQueueValue(t *testing.T) {
 	require.True(t, q.Contains(15))
 	q.Remove(15)
 	require.False(t, q.Contains(15))
+
+	// Clear
+	q.Clear()
+
+	val, ok = q.Peek()
+	require.False(t, ok)
+	require.Equal(t, 0, int(val))
+
+	val, ok = q.Poll()
+	require.False(t, ok)
+	require.Equal(t, 0, int(val))
 }
 
-func TestPriorityQueueMinHeap(t *testing.T) {
+func Test_PriorityQueue_MinHeap(t *testing.T) {
 	pq := NewPriorityQueue[Int](false)
-	pqTestPriorityQueueSortImpl(t, pq, []Int{15, 19, 12, 8, 13}, []Int{8, 12, 13, 15, 19})
+	pq_Test_PriorityQueue_SortImpl(t, pq, []Int{15, 19, 12, 8, 13}, []Int{8, 12, 13, 15, 19})
 }
 
-func TestPriorityQueueMaxHeap(t *testing.T) {
+func Test_PriorityQueue_MaxHeap(t *testing.T) {
 	pq := NewPriorityQueue[Int](true)
-	pqTestPriorityQueueSortImpl(t, pq, []Int{15, 19, 12, 8, 13}, []Int{19, 15, 13, 12, 8})
+	pq_Test_PriorityQueue_SortImpl(t, pq, []Int{15, 19, 12, 8, 13}, []Int{19, 15, 13, 12, 8})
 }
 
-func pqTestPriorityQueueSortImpl[T Comparable](t *testing.T, q *PriorityQueue[T], input, expected []T) {
+func pq_Test_PriorityQueue_SortImpl[T Comparable](t *testing.T, q *PriorityQueue[T], input, expected []T) {
 	for i := 0; i < len(input); i++ {
 		q.Add(input[i])
 	}
@@ -98,22 +107,22 @@ func pqTestPriorityQueueSortImpl[T Comparable](t *testing.T, q *PriorityQueue[T]
 	require.Zero(t, q.Len())
 }
 
-func TestPriorityQueueDeleteMinHeap(t *testing.T) {
+func Test_PriorityQueue_DeleteMinHeap(t *testing.T) {
 	pq := NewPriorityQueue[Int](false)
-	pqTestPriorityQueueDeleteImpl(t, pq, []Int{15, 19, 12, 8, 13}, []Int{8, 12, 13, 15}, 19)
+	pq_Test_PriorityQueue_DeleteImpl(t, pq, []Int{15, 19, 12, 8, 13}, []Int{8, 12, 13, 15}, 19)
 }
 
-func TestPriorityQueueDeleteMinHeapWithComparator(t *testing.T) {
+func Test_PriorityQueue_DeleteMinHeapWithComparator(t *testing.T) {
 	pq := NewPriorityQueue[Int](true)
-	pqTestPriorityQueueDeleteImpl(t, pq, []Int{15, 19, 12, 8, 13}, []Int{19, 13, 12, 8}, 15)
+	pq_Test_PriorityQueue_DeleteImpl(t, pq, []Int{15, 19, 12, 8, 13}, []Int{19, 13, 12, 8}, 15)
 }
 
-func TestPriorityQueueDeleteMaxHeap(t *testing.T) {
+func Test_PriorityQueue_DeleteMaxHeap(t *testing.T) {
 	pq := NewPriorityQueue[Int](true)
-	pqTestPriorityQueueDeleteImpl(t, pq, []Int{15, 19, 12, 8, 13}, []Int{19, 15, 13, 8}, 12)
+	pq_Test_PriorityQueue_DeleteImpl(t, pq, []Int{15, 19, 12, 8, 13}, []Int{19, 15, 13, 8}, 12)
 }
 
-func pqTestPriorityQueueDeleteImpl[T Comparable](t *testing.T, q *PriorityQueue[T], input, expected []T, val T) {
+func pq_Test_PriorityQueue_DeleteImpl[T Comparable](t *testing.T, q *PriorityQueue[T], input, expected []T, val T) {
 	for i := 0; i < len(input); i++ {
 		q.Add(input[i])
 	}
