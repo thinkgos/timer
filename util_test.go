@@ -27,7 +27,7 @@ func Test_IsPowOf2(t *testing.T) {
 	t.Log(intSize)
 	for _, v := range ranges(0, math.MaxInt8) {
 		vv := int(math.Pow(2, float64(v)))
-		require.True(t, IsPowOf2(vv), vv, v)
+		require.True(t, IsPowOf2(vv), "%d - %d", vv, v)
 	}
 	require.False(t, IsPowOf2(100))
 }
