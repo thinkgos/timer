@@ -10,6 +10,7 @@ import (
 
 func main() {
 	t := timer.NewTimer()
+	t.Start()
 	var wg sync.WaitGroup
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
@@ -19,7 +20,6 @@ func main() {
 			wg.Done()
 		})
 	}
-	t.Start()
 	wg.Wait()
 	t.Stop()
 }

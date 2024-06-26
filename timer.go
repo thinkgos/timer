@@ -1,7 +1,7 @@
 package timer
 
 import (
-	"context"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -27,21 +27,23 @@ func WithWheelSize(size int) Option {
 type Timer struct {
 	tickMs      int64                          // 基本时间跨度, 单位ms
 	wheelSize   int                            // 轮的大小, 2的n次方
-	taskCounter *atomic.Int64                  // 任务总数
+	taskCounter atomic.Int64                   // 任务总数
 	delayQueue  *delayqueue.DelayQueue[*Spoke] // 延迟队列
 	wheel       *TimingWheel                   // 时间轮
 	goPool      GoPool                         // 协程池
-	ctx         context.Context
-	cancel      context.CancelFunc
+	mu          sync.Mutex                     // protects following fields
+	quit        chan struct{}                  // of chan struct{}, created when first start.
+	closed      bool                           // true if closed.
 }
 
 func NewTimer(opts ...Option) *Timer {
 	t := &Timer{
 		tickMs:      1,
 		wheelSize:   32,
-		taskCounter: &atomic.Int64{},
+		taskCounter: atomic.Int64{},
 		delayQueue:  delayqueue.NewDelayQueue[*Spoke](),
 		goPool:      InternalGoPool{},
+		closed:      true,
 	}
 	for _, opt := range opts {
 		opt(t)
@@ -52,7 +54,6 @@ func NewTimer(opts ...Option) *Timer {
 	if t.wheelSize <= 0 {
 		panic("timer: wheel size must be greater than 0")
 	}
-	t.ctx, t.cancel = context.WithCancel(context.Background())
 	t.wheel = newTimingWheel(t, t.tickMs, time.Now().UnixMilli())
 	return t
 }
@@ -75,30 +76,38 @@ func (t *Timer) AddTask(task *Task) {
 	}
 }
 
+func (t *Timer) Start() {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.closed {
+		t.closed = false
+		t.quit = make(chan struct{})
+		go func() {
+			for {
+				spoke, exit := t.delayQueue.Take(t.quit)
+				if exit {
+					break
+				}
+				t.wheel.AdvanceClock(spoke.GetExpiration())
+				spoke.Flush(t.reinsert)
+			}
+		}()
+	}
+}
+
+func (t *Timer) Stop() {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if !t.closed {
+		t.closed = true
+		close(t.quit)
+	}
+}
+
 func (t *Timer) addToDelayQueue(spoke *Spoke) {
 	t.delayQueue.Add(spoke)
 }
 
 func (t *Timer) reinsert(task *Task) {
 	t.AddTask(task)
-}
-
-func (t *Timer) Start() {
-	go func() {
-		for {
-			d := t.delayQueue.Take(t.ctx)
-			if d == nil {
-				break
-			}
-			spoke := d.(*Spoke)
-			t.wheel.AdvanceClock(spoke.GetExpiration())
-			spoke.Flush(t.reinsert)
-		}
-	}()
-}
-
-func (t *Timer) Stop() {
-	if t.cancel != nil {
-		t.cancel()
-	}
 }

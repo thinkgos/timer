@@ -14,7 +14,7 @@ type TimingWheel struct {
 func newTimingWheel(t *Timer, tickMs int64, startMs int64) *TimingWheel {
 	spokes := make([]*Spoke, t.wheelSize)
 	for i := range spokes {
-		spokes[i] = NewSpoke(t.taskCounter)
+		spokes[i] = NewSpoke(&t.taskCounter)
 	}
 	return &TimingWheel{
 		timer:       t,
@@ -41,12 +41,12 @@ func (tw *TimingWheel) Add(task *Task) bool {
 		spoke := tw.spokes[int(virtualId)&(tw.timer.WheelSize()-1)]
 		spoke.Add(task)
 
-		// Set the bucket expiration time
+		// Set the spoke expiration time
 		if spoke.SetExpiration(virtualId * tw.tickMs) {
-			// The bucket needs to be enqueued because it was an expired bucket
-			// We only need to enqueue the bucket when its expiration time has changed, i.e. the wheel has advanced
-			// and the previous buckets gets reused; further calls to set the expiration within the same wheel cycle
-			// will pass in the same value and hence return false, thus the bucket with the same expiration will not
+			// The spoke needs to be enqueued because it was an expired spoke
+			// We only need to enqueue the spoke when its expiration time has changed, i.e. the wheel has advanced
+			// and the previous spokes gets reused; further calls to set the expiration within the same wheel cycle
+			// will pass in the same value and hence return false, thus the spoke with the same expiration will not
 			// be enqueued multiple times.
 			tw.timer.addToDelayQueue(spoke)
 		}

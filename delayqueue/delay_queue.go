@@ -1,7 +1,6 @@
 package delayqueue
 
 import (
-	"context"
 	"sync"
 	"time"
 
@@ -18,6 +17,7 @@ type DelayQueue[T Delayed] struct {
 	priorityQueue *queue.PriorityQueue[T]
 	notify        chan struct{}
 	waiting       bool
+	phantom       T
 }
 
 func NewDelayQueue[T Delayed]() *DelayQueue[T] {
@@ -48,7 +48,7 @@ func (dq *DelayQueue[T]) Add(val T) {
 	}
 }
 
-func (dq *DelayQueue[T]) Take(ctx context.Context) Delayed {
+func (dq *DelayQueue[T]) Take(quit <-chan struct{}) (t T, exit bool) {
 	for {
 		dq.mu.Lock()
 		first, exist := dq.priorityQueue.Peek()
@@ -59,8 +59,8 @@ func (dq *DelayQueue[T]) Take(ctx context.Context) Delayed {
 			select {
 			case <-dq.notify:
 				continue
-			case <-ctx.Done():
-				return nil
+			case <-quit:
+				return dq.phantom, true
 			}
 		}
 
@@ -68,15 +68,15 @@ func (dq *DelayQueue[T]) Take(ctx context.Context) Delayed {
 		if delay <= 0 {
 			dq.priorityQueue.Poll()
 			dq.mu.Unlock()
-			return first
+			return first, false
 		}
 		dq.waiting = true
 		dq.mu.Unlock()
 		tm := time.NewTimer(time.Duration(delay) * time.Millisecond)
 		select {
-		case <-ctx.Done():
+		case <-quit:
 			tm.Stop()
-			return nil
+			return dq.phantom, true
 		case <-dq.notify:
 			tm.Stop()
 		case <-tm.C:
