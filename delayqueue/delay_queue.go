@@ -14,11 +14,11 @@ type Delayed interface {
 }
 
 type DelayQueue[T Delayed] struct {
-	mu            sync.Mutex
-	priorityQueue *queue.PriorityQueue[T]
-	notify        chan struct{}
-	waiting       atomic.Bool
-	phantom       T
+	notify        chan struct{}           // notify channel
+	phantom       T                       // phantom data for T, not any used, just placeholder for Take function, when exit.
+	mu            sync.Mutex              // protects following fields
+	priorityQueue *queue.PriorityQueue[T] // priority queue
+	waiting       atomic.Bool             // waiting or not.
 }
 
 func NewDelayQueue[T Delayed]() *DelayQueue[T] {
