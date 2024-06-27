@@ -27,7 +27,7 @@ Then import the package into your own code.
 
 ### Example
 
-[embedmd]:# (examples/main.go go)
+[embedmd]:# (_examples/sample/main.go go)
 ```go
 package main
 
