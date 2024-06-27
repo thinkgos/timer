@@ -27,7 +27,9 @@ func newPo() *po {
 	return &po{p: defaultAntsPool}
 }
 
-var tim = timer.NewTimer(timer.WithGoPool(newPo()))
+var defaultPool = newPo()
+
+var tim = timer.NewTimer(timer.WithGoPool(defaultPool))
 
 func init() {
 	tim.Start()
@@ -39,18 +41,24 @@ func main() {
 		t := time.NewTicker(time.Second)
 		for {
 			<-t.C
-			plus := rand.Int() & 0x08
-			now := time.Now().UnixMilli()
-			for i := 1; i < int(rand.Uint32N(math.MaxUint16)); i = i + plus {
-				sum.Add(1)
-				delayms := int64(i) * 100
-				j := &job{
-					sum:          sum,
-					expirationMs: now + delayms,
-				}
-				tim.AddTask(timer.NewTask(delayms).WithJob(j))
+			added := 0
+			ranv := rand.IntN(10)
+			max := int(rand.Uint32N(math.MaxInt16))
+			for i := 100; i < max; i += 100 {
+				added++
+				ii := i + ranv
+
+				defaultPool.Go(func() {
+					sum.Add(1)
+					delayms := int64(ii) * 20
+					j := &job{
+						sum:          sum,
+						expirationMs: time.Now().UnixMilli() + delayms,
+					}
+					tim.AddTask(timer.NewTask(delayms).WithJob(j))
+				})
 			}
-			log.Printf("task: %v - %v", tim.TaskCounter(), sum.Load())
+			log.Printf("task: %v - %v added: %d", tim.TaskCounter(), sum.Load(), added)
 		}
 	}()
 
@@ -65,8 +73,8 @@ type job struct {
 }
 
 func (j *job) Run() {
-	j.sum.Add(-1)
 	now := time.Now().UnixMilli()
+	j.sum.Add(-1)
 	if diff := now - j.expirationMs; diff > 1 {
 		log.Printf("this task no equal, diff: %d %d %d\n", now, j.expirationMs, diff)
 	}

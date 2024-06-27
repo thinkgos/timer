@@ -55,11 +55,11 @@ type Timer struct {
 	closed      bool                           // true if closed.
 }
 
-// NewTimer new timer instance. tick is 1 milliseconds, wheel size is 32.
+// NewTimer new timer instance. tick is 1 milliseconds, wheel size is 1024.
 func NewTimer(opts ...Option) *Timer {
 	t := &Timer{
 		tickMs:      1,
-		wheelSize:   32,
+		wheelSize:   1024,
 		taskCounter: atomic.Int64{},
 		delayQueue:  delayqueue.NewDelayQueue[*Spoke](),
 		goPool:      goroutinePool,
