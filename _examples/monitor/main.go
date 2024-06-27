@@ -43,7 +43,7 @@ func main() {
 			<-t.C
 			added := 0
 			ranv := rand.IntN(10)
-			max := int(rand.Uint32N(math.MaxInt16))
+			max := int(rand.Uint32N(math.MaxUint16))
 			for i := 100; i < max; i += 100 {
 				added++
 				ii := i + ranv
@@ -73,8 +73,8 @@ type job struct {
 }
 
 func (j *job) Run() {
-	now := time.Now().UnixMilli()
 	j.sum.Add(-1)
+	now := time.Now().UnixMilli()
 	if diff := now - j.expirationMs; diff > 1 {
 		log.Printf("this task no equal, diff: %d %d %d\n", now, j.expirationMs, diff)
 	}
