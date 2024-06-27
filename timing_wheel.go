@@ -66,7 +66,7 @@ func (tw *TimingWheel) Add(task *Task) bool {
 			if tw.overflowWheel == nil {
 				tw.overflowWheel = newTimingWheel(tw.timer, tw.interval, tw.currentTime)
 			}
-			tw.rw.Lock()
+			tw.rw.Unlock()
 		}
 		return tw.overflowWheel.Add(task)
 	}

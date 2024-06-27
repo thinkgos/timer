@@ -43,14 +43,14 @@ func main() {
 			<-t.C
 			added := 0
 			ranv := rand.IntN(10)
-			max := int(rand.Uint32N(math.MaxInt16))
+			max := int(rand.Uint32N(math.MaxUint16))
 			for i := 100; i < max; i += 100 {
 				added++
 				ii := i + ranv
 
 				defaultPool.Go(func() {
 					sum.Add(1)
-					delayms := int64(ii) * 20
+					delayms := int64(ii) * 100
 					j := &job{
 						sum:          sum,
 						expirationMs: time.Now().UnixMilli() + delayms,
