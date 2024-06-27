@@ -111,8 +111,8 @@ func (t *Timer) Start() {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	if t.closed {
-		t.closed = false
 		quit := make(chan struct{})
+		t.closed = false
 		t.quit = quit
 		go func() {
 			for {
