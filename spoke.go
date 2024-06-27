@@ -13,6 +13,7 @@ var _ delayqueue.Delayed = (*Spoke)(nil)
 
 type Spoke struct {
 	root        Task // sentinel list element, only &root, root.prev, and root.next are used
+	len         int  // number of elements
 	taskCounter *atomic.Int64
 	expiration  atomic.Int64
 	mu          sync.Mutex
@@ -46,6 +47,7 @@ func (sp *Spoke) Add(task *Task) {
 				task.next.prev = task
 
 				task.list.Store(sp)
+				sp.len++
 				sp.taskCounter.Add(1)
 				done = true
 			}
@@ -68,8 +70,17 @@ func (sp *Spoke) remove(task *Task) {
 		task.next = nil // avoid memory leaks
 		task.prev = nil // avoid memory leaks
 		task.list.Store(nil)
+		sp.len--
 		sp.taskCounter.Add(-1)
 	}
+}
+
+// Front returns the first task of list l or nil if the list is empty.
+func (sp *Spoke) frontTask() *Task {
+	if sp.len == 0 {
+		return nil
+	}
+	return sp.root.next
 }
 
 // Flush all task entries and apply the supplied function to each of them
@@ -78,7 +89,7 @@ func (sp *Spoke) Flush(f func(*Task)) {
 
 	sp.mu.Lock()
 	defer sp.mu.Unlock()
-	for e := sp.root.next; e != nil; e = temp {
+	for e := sp.frontTask(); e != nil; e = temp {
 		temp = e.nextTask()
 		sp.remove(e)
 		f(e)

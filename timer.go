@@ -55,6 +55,7 @@ type Timer struct {
 	closed      bool                           // true if closed.
 }
 
+// NewTimer new timer instance. tick is 1 milliseconds, wheel size is 32.
 func NewTimer(opts ...Option) *Timer {
 	t := &Timer{
 		tickMs:      1,
@@ -98,6 +99,14 @@ func (t *Timer) AddTask(task *Task) {
 	}
 }
 
+// Started have started or not.
+func (t *Timer) Started() bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return !t.closed
+}
+
+// Start the timer.
 func (t *Timer) Start() {
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -117,6 +126,7 @@ func (t *Timer) Start() {
 	}
 }
 
+// Stop the timer.
 func (t *Timer) Stop() {
 	t.mu.Lock()
 	defer t.mu.Unlock()

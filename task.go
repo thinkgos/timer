@@ -3,6 +3,7 @@ package timer
 import (
 	"fmt"
 	"os"
+	"runtime/debug"
 	"sync/atomic"
 	"time"
 )
@@ -68,7 +69,7 @@ func (t *Task) WithJob(j Job) *Task {
 func (t *Task) Run() {
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Fprintf(os.Stderr, "timer: Recovered from panic: %v\n", err)
+			fmt.Fprintf(os.Stderr, "timer: Recovered from panic: %v\n, %s\n", err, string(debug.Stack()))
 		}
 	}()
 	t.job.Run()
