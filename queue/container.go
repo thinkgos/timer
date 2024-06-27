@@ -9,8 +9,8 @@ var _ heap.Interface = (*Container[Int])(nil)
 var _ sort.Interface = (*Container[Int])(nil)
 
 type Container[T Comparable] struct {
-	Items   []T
-	Reverse bool
+	Items []T  // container data
+	Desc  bool // asc or desc, default asc.
 }
 
 // Len implement heap.Interface.
@@ -25,7 +25,7 @@ func (c Container[T]) Swap(i, j int) {
 
 // Less implement heap.Interface.
 func (c Container[T]) Less(i, j int) bool {
-	if c.Reverse {
+	if c.Desc {
 		i, j = j, i
 	}
 	return c.Items[i].CompareTo(c.Items[j]) < 0

@@ -14,8 +14,8 @@ type PriorityQueue[T Comparable] struct {
 func NewPriorityQueue[T Comparable](maxHeap bool, items ...T) *PriorityQueue[T] {
 	q := &PriorityQueue[T]{
 		data: &Container[T]{
-			Items:   items,
-			Reverse: maxHeap,
+			Items: items,
+			Desc:  maxHeap,
 		},
 	}
 	heap.Init(q.data)

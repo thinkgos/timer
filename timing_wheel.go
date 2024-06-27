@@ -31,7 +31,7 @@ func (tw *TimingWheel) Add(task *Task) bool {
 	if task.cancelled() { // 已取消
 		return false
 	}
-	expiration := task.expirationMs
+	expiration := task.ExpirationMs()
 	if expiration < tw.currentTime+tw.tickMs { // 已经过期了
 		return false
 	}

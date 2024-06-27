@@ -5,8 +5,11 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/thinkgos/timer/delayqueue"
 	"github.com/thinkgos/timer/queue"
 )
+
+var _ delayqueue.Delayed = (*Spoke)(nil)
 
 type Spoke struct {
 	root        Task // sentinel list element, only &root, root.prev, and root.next are used

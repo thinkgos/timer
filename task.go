@@ -82,6 +82,12 @@ func (t *Task) Cancel() {
 	t.hasCancelled.Store(true)
 }
 
+// DelayMs delay milliseconds
+func (t *Task) DelayMs() int64 { return t.delayMs }
+
+// ExpirationMs expiration milliseconds.
+func (t *Task) ExpirationMs() int64 { return t.expirationMs }
+
 func (t *Task) cancelled() bool { return t.hasCancelled.Load() }
 
 // nextTask 返回列表上的下一项, 如果没有返回nil
