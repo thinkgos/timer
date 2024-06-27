@@ -36,6 +36,10 @@ func Test_NextPowOf2(t *testing.T) {
 		got := NextPowOf2(want - 2)
 		require.Equal(t, want, got)
 		require.True(t, IsPowOf2(got))
+
+		got2 := NextPowOf2(want)
+		require.Equal(t, want, got2)
+		require.True(t, IsPowOf2(got2))
 	}
 	require.True(t, IsPowOf2(NextPowOf2(math.MaxInt64-200)))
 }

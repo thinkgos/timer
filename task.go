@@ -18,9 +18,7 @@ type JobFunc func()
 // Run implement job interface
 func (f JobFunc) Run() { f() }
 
-type EmptyJob struct{}
-
-func (EmptyJob) Run() {}
+var emptyJob = JobFunc(func() {})
 
 // Task 是双向链表的一个元素.
 type Task struct {
@@ -29,54 +27,59 @@ type Task struct {
 	// as a ring, such that &l.root is both the next element of the last
 	// list element (l.Back()) and the previous element of the first list
 	// element (l.Front()).
-	prev, next *Task
-	list       atomic.Pointer[Spoke] // 此元素所属的列表
+	prev *Task
+	next *Task
+	list atomic.Pointer[Spoke] // 此元素所属的列表
 
-	// follow The value stored with this element.
-	delayMs      int64       // 延迟多少ms
+	// follow values associated with this element.
+	delayMs      int64       // 延迟多少, 单位: ms
 	expirationMs int64       // 到期时间, 绝对时间, 单位: ms
-	job          Job         // 任务
+	job          Job         // 未来执行的工作任务
 	hasCancelled atomic.Bool // 是否取消
 }
 
-// NewTask 创建一个空job任务条目
+// NewTask new task with delay ms and empty job.
 func NewTask(delayMs int64) *Task {
 	return &Task{
 		delayMs:      delayMs,
 		expirationMs: delayMs + time.Now().UnixMilli(),
-		job:          EmptyJob{},
+		job:          emptyJob,
 	}
 }
 
+// NewTaskFunc new task with delay ms and function job.
 func NewTaskFunc(delayMs int64, f func()) *Task {
 	return NewTask(delayMs).WithJobFunc(f)
 }
 
+// WithJobFunc with function job
 func (t *Task) WithJobFunc(f func()) *Task {
 	t.job = JobFunc(f)
 	return t
 }
 
+// WithJob with job
 func (t *Task) WithJob(j Job) *Task {
 	t.job = j
 	return t
 }
 
+// Run immediate call job.
 func (t *Task) Run() {
-	// hold recover
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Fprintf(os.Stderr, "timer: Recovered from panic: %v", err)
+			fmt.Fprintf(os.Stderr, "timer: Recovered from panic: %v\n", err)
 		}
 	}()
 	t.job.Run()
 }
 
+// Cancel the task
 func (t *Task) Cancel() {
 	if t.list.Load() != nil {
 		t.removeSelf()
-		t.hasCancelled.Store(true)
 	}
+	t.hasCancelled.Store(true)
 }
 
 func (t *Task) cancelled() bool { return t.hasCancelled.Load() }

@@ -16,94 +16,96 @@ type Spoke struct {
 }
 
 func NewSpoke(taskCounter *atomic.Int64) *Spoke {
-	s := &Spoke{
+	sp := &Spoke{
 		taskCounter: taskCounter,
 	}
-	s.expiration.Store(-1)
-	s.root.next = &s.root
-	s.root.prev = &s.root
-	return s
+	sp.expiration.Store(-1)
+	sp.root.next = &sp.root
+	sp.root.prev = &sp.root
+	return sp
 }
 
 // Add a timer task to this list
-func (s *Spoke) Add(task *Task) {
+func (sp *Spoke) Add(task *Task) {
 	for done := false; !done; {
 		// Remove the timer task if it is already in any other list
 		// We do this outside of the sync block below to avoid deadlocking.
 		// We may retry until task.list becomes null.
 		task.removeSelf()
-		if task.list.Load() == nil {
-			s.mu.Lock()
-			at := s.root.prev
+		if task.list.Load() == nil { // fast check.
+			sp.mu.Lock()
+			if task.list.Load() == nil { // double check but slow.
+				at := sp.root.prev
 
-			task.prev = at
-			task.next = at.next
-			task.prev.next = task
-			task.next.prev = task
+				task.prev = at
+				task.next = at.next
+				task.prev.next = task
+				task.next.prev = task
 
-			task.list.Store(s)
-			s.taskCounter.Add(1)
-			done = true
-			s.mu.Unlock()
+				task.list.Store(sp)
+				sp.taskCounter.Add(1)
+				done = true
+			}
+			sp.mu.Unlock()
 		}
 	}
 }
 
 // Remove the specified timer task from this list
-func (s *Spoke) Remove(task *Task) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.remove(task)
+func (sp *Spoke) Remove(task *Task) {
+	sp.mu.Lock()
+	defer sp.mu.Unlock()
+	sp.remove(task)
 }
 
-func (s *Spoke) remove(task *Task) {
-	if task.list.Load() == s {
+func (sp *Spoke) remove(task *Task) {
+	if task.list.Load() == sp {
 		task.prev.next = task.next
 		task.next.prev = task.prev
 		task.next = nil // avoid memory leaks
 		task.prev = nil // avoid memory leaks
 		task.list.Store(nil)
-		s.taskCounter.Add(-1)
+		sp.taskCounter.Add(-1)
 	}
 }
 
 // Flush all task entries and apply the supplied function to each of them
-func (s *Spoke) Flush(f func(*Task)) {
+func (sp *Spoke) Flush(f func(*Task)) {
 	var temp *Task
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for e := s.root.next; e != nil; e = temp {
+	sp.mu.Lock()
+	defer sp.mu.Unlock()
+	for e := sp.root.next; e != nil; e = temp {
 		temp = e.nextTask()
-		s.remove(e)
+		sp.remove(e)
 		f(e)
 	}
-	s.SetExpiration(-1)
+	sp.SetExpiration(-1)
 }
 
 // Set the spoke's expiration time
 // Returns true if the expiration time is changed
-func (s *Spoke) SetExpiration(expirationMs int64) bool {
-	return s.expiration.Swap(expirationMs) != expirationMs
+func (sp *Spoke) SetExpiration(expirationMs int64) bool {
+	return sp.expiration.Swap(expirationMs) != expirationMs
 }
 
 // Get the spoke's expiration time
-func (s *Spoke) GetExpiration() int64 { return s.expiration.Load() }
+func (sp *Spoke) GetExpiration() int64 { return sp.expiration.Load() }
 
-func (s *Spoke) DelayMs() int64 {
-	delay := s.GetExpiration() - time.Now().UnixMilli()
+func (sp *Spoke) DelayMs() int64 {
+	delay := sp.GetExpiration() - time.Now().UnixMilli()
 	if delay < 0 {
 		return 0
 	}
 	return delay
 }
 
-func (s *Spoke) CompareTo(s2 queue.Comparable) int {
-	d, d2 := s.GetExpiration(), s2.(*Spoke).GetExpiration()
-	if d < d2 {
+func (sp *Spoke) CompareTo(sp2 queue.Comparable) int {
+	v1, v2 := sp.GetExpiration(), sp2.(*Spoke).GetExpiration()
+	if v1 < v2 {
 		return -1
 	}
-	if d > d2 {
+	if v1 > v2 {
 		return 1
 	}
 	return 0

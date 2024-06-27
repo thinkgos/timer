@@ -8,9 +8,12 @@ import (
 	"github.com/thinkgos/timer/delayqueue"
 )
 
+var goroutinePool = goroutine{}
+
 type GoPool interface {
 	Go(f func())
 }
+
 type goroutine struct{}
 
 func (goroutine) Go(f func()) {
@@ -33,6 +36,13 @@ func WithWheelSize(size int) Option {
 	}
 }
 
+// WithGoPool 设置协程池
+func WithGoPool(p GoPool) Option {
+	return func(t *Timer) {
+		t.goPool = p
+	}
+}
+
 type Timer struct {
 	tickMs      int64                          // 基本时间跨度, 单位ms
 	wheelSize   int                            // 轮的大小, 2的n次方
@@ -51,7 +61,7 @@ func NewTimer(opts ...Option) *Timer {
 		wheelSize:   32,
 		taskCounter: atomic.Int64{},
 		delayQueue:  delayqueue.NewDelayQueue[*Spoke](),
-		goPool:      goroutine{},
+		goPool:      goroutinePool,
 		closed:      true,
 	}
 	for _, opt := range opts {
@@ -62,6 +72,9 @@ func NewTimer(opts ...Option) *Timer {
 	}
 	if t.wheelSize <= 0 {
 		panic("timer: wheel size must be greater than 0")
+	}
+	if t.goPool == nil {
+		t.goPool = goroutinePool
 	}
 	t.wheel = newTimingWheel(t, t.tickMs, time.Now().UnixMilli())
 	return t

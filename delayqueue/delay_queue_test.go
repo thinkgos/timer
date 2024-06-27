@@ -60,7 +60,7 @@ func Test_DelayQueue_Empty_Begin(t *testing.T) {
 		time.Sleep(time.Millisecond * 20)
 		d1 := &delay{"d1", time.Now().UnixMilli() + 100}
 		d2 := &delay{"d2", time.Now().UnixMilli() + 200}
-		d3 := &delay{"d3", time.Now().UnixMilli() + 100}
+		d3 := &delay{"d3", time.Now().UnixMilli() + 90}
 		dq.Add(d1)
 		dq.Add(d2)
 		dq.Add(d3)
@@ -68,12 +68,12 @@ func Test_DelayQueue_Empty_Begin(t *testing.T) {
 
 	v1, exit := dq.Take(nil)
 	require.False(t, exit)
-	assert.Equal(t, "d1", v1.name)
+	assert.Equal(t, "d3", v1.name)
 	assert.LessOrEqual(t, v1.DelayMs(), int64(0))
 
 	v3, exit := dq.Take(nil)
 	require.False(t, exit)
-	assert.Equal(t, "d3", v3.name)
+	assert.Equal(t, "d1", v3.name)
 	assert.LessOrEqual(t, v3.DelayMs(), int64(0))
 
 	v2, exit := dq.Take(nil)
