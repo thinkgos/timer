@@ -8,6 +8,8 @@ import (
 	"github.com/thinkgos/timer/delayqueue"
 )
 
+const defaultWheelSize = 1024
+
 var goroutinePool = goroutine{}
 
 type GoPool interface {
@@ -59,7 +61,7 @@ type Timer struct {
 func NewTimer(opts ...Option) *Timer {
 	t := &Timer{
 		tickMs:      1,
-		wheelSize:   1024,
+		wheelSize:   defaultWheelSize,
 		taskCounter: atomic.Int64{},
 		delayQueue:  delayqueue.NewDelayQueue[*Spoke](),
 		goPool:      goroutinePool,

@@ -12,7 +12,7 @@ func Test_Timer_Init(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		tm := NewTimer()
 		require.Equal(t, int64(1), tm.TickMs())
-		require.Equal(t, 32, tm.WheelSize())
+		require.Equal(t, defaultWheelSize, tm.WheelSize())
 		require.Equal(t, int64(0), tm.TaskCounter())
 	})
 	t.Run("custom", func(t *testing.T) {
