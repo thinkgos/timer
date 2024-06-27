@@ -112,10 +112,11 @@ func (t *Timer) Start() {
 	defer t.mu.Unlock()
 	if t.closed {
 		t.closed = false
-		t.quit = make(chan struct{})
+		quit := make(chan struct{})
+		t.quit = quit
 		go func() {
 			for {
-				spoke, exit := t.delayQueue.Take(t.quit)
+				spoke, exit := t.delayQueue.Take(quit)
 				if exit {
 					break
 				}
