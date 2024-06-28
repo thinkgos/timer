@@ -37,8 +37,19 @@ func Test_Timer_Init(t *testing.T) {
 
 func Test_Timer_Start_Stop_Restart(t *testing.T) {
 	tm := NewTimer()
+	// timer is closed
+	_, err := tm.AfterFunc(time.Second, func() {})
+	require.ErrorIs(t, err, ErrClosed)
+	err = tm.AddTask(NewTask(100 * time.Millisecond))
+	require.ErrorIs(t, err, ErrClosed)
 	tm.Start()
 	require.True(t, tm.Started())
+	// timer is started
+	_, err = tm.AfterFunc(time.Millisecond*100, func() {})
+	require.Nil(t, err)
+	err = tm.AddTask(NewTask(100 * time.Millisecond))
+	require.Nil(t, err)
+
 	tm.Start() // double start, not start again.
 	tm.Stop()
 	require.False(t, tm.Started())
@@ -50,22 +61,22 @@ func Test_Timer_Start_Stop_Restart(t *testing.T) {
 func ExampleTimer() {
 	tm := NewTimer()
 	tm.Start()
-	tm.AfterFunc(100, func() {
+	_, _ = tm.AfterFunc(100*time.Millisecond, func() {
 		fmt.Println(100)
 	})
-	tm.AddTask(NewTask(200).WithJobFunc(func() {
+	_ = tm.AddTask(NewTask(200 * time.Millisecond).WithJobFunc(func() {
 		fmt.Println(200)
 	}))
-	canceledTaskAfterAdd := NewTask(300).WithJobFunc(func() {
+	canceledTaskAfterAdd := NewTask(300 * time.Millisecond).WithJobFunc(func() {
 		fmt.Println("canceled after add")
 	})
-	tm.AddTask(canceledTaskAfterAdd)
+	_ = tm.AddTask(canceledTaskAfterAdd)
 	canceledTaskAfterAdd.Cancel()
-	canceledTaskBeforeAdd := NewTask(301).WithJobFunc(func() {
+	canceledTaskBeforeAdd := NewTask(301 * time.Millisecond).WithJobFunc(func() {
 		fmt.Println("canceled before add")
 	})
 	canceledTaskBeforeAdd.Cancel()
-	tm.AddTask(canceledTaskBeforeAdd)
+	_ = tm.AddTask(canceledTaskBeforeAdd)
 	time.Sleep(time.Second)
 	// Output:
 	// 100

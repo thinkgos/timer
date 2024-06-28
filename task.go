@@ -38,8 +38,9 @@ type Task struct {
 	hasCancelled atomic.Bool // 是否取消
 }
 
-// NewTask new task with delay ms and empty job.
-func NewTask(delayMs int64) *Task {
+// NewTask new task with delay duration and empty job, the accuracy is milliseconds.
+func NewTask(d time.Duration) *Task {
+	delayMs := int64(d / time.Millisecond)
 	return &Task{
 		delayMs:      delayMs,
 		expirationMs: delayMs + time.Now().UnixMilli(),
@@ -47,9 +48,9 @@ func NewTask(delayMs int64) *Task {
 	}
 }
 
-// NewTaskFunc new task with delay ms and function job.
-func NewTaskFunc(delayMs int64, f func()) *Task {
-	return NewTask(delayMs).WithJobFunc(f)
+// NewTaskFunc new task with delay duration and function job, the accuracy is milliseconds.
+func NewTaskFunc(d time.Duration, f func()) *Task {
+	return NewTask(d).WithJobFunc(f)
 }
 
 // WithJobFunc with function job
@@ -82,8 +83,8 @@ func (t *Task) Cancel() {
 	t.hasCancelled.Store(true)
 }
 
-// DelayMs delay milliseconds
-func (t *Task) DelayMs() int64 { return t.delayMs }
+// Delay delay duration, the accuracy is milliseconds.
+func (t *Task) Delay() time.Duration { return time.Duration(t.delayMs) * time.Millisecond }
 
 // ExpirationMs expiration milliseconds.
 func (t *Task) ExpirationMs() int64 { return t.expirationMs }

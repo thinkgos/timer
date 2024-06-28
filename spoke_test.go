@@ -28,12 +28,12 @@ func Test_Spoke(t *testing.T) {
 
 func Test_Spoke_Task(t *testing.T) {
 	tasks := map[*Task]struct{}{
-		NewTask(101): {},
-		NewTask(102): {},
-		NewTask(103): {},
-		NewTask(105): {},
+		NewTask(101 * time.Millisecond): {},
+		NewTask(102 * time.Millisecond): {},
+		NewTask(103 * time.Millisecond): {},
+		NewTask(105 * time.Millisecond): {},
 	}
-	task1 := NewTask(104)
+	task1 := NewTask(104 * time.Millisecond)
 
 	taskCounter := &atomic.Int64{}
 	spoke := NewSpoke(taskCounter)

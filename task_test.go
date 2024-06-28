@@ -4,6 +4,7 @@ import (
 	"errors"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -30,30 +31,30 @@ func (t *testJob) Run() {
 
 func Test_Task_Job(t *testing.T) {
 	job := newTestJob(100)
-	task := NewTask(100).WithJob(job)
-	require.Equal(t, int64(100), task.DelayMs())
+	task := NewTask(100 * time.Millisecond).WithJob(job)
+	require.Equal(t, 100*time.Millisecond, task.Delay())
 	task.Run()
 	require.Equal(t, wantJobValue, job.Value())
 
 	job1 := newTestJob(101)
-	task1 := NewTaskFunc(101, job1.Run)
+	task1 := NewTaskFunc(101*time.Millisecond, job1.Run)
 	task1.Run()
 	require.Equal(t, wantJobValue, job1.Value())
 
 	// empty job
-	task2 := NewTask(101)
+	task2 := NewTask(101 * time.Millisecond)
 	task2.Run()
 }
 
 func Test_Task_RecoverPanic(t *testing.T) {
-	task := NewTaskFunc(100, func() {
+	task := NewTaskFunc(100*time.Millisecond, func() {
 		panic(errors.New("panic"))
 	})
 	require.NotPanics(t, task.Run)
 }
 
 func Test_Task_Cancel(t *testing.T) {
-	task := NewTask(100)
+	task := NewTask(100 * time.Millisecond)
 	require.False(t, task.cancelled())
 
 	task.Cancel()

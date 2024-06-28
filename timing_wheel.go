@@ -28,9 +28,9 @@ func newTimingWheel(t *Timer, tickMs int64, startMs int64) *TimingWheel {
 	}
 }
 
-// Add 加到时间轮上
+// add 加到时间轮上
 // true:添加成功, false: 已取消或已过期
-func (tw *TimingWheel) Add(task *Task) bool {
+func (tw *TimingWheel) add(task *Task) bool {
 	if task.cancelled() { // 已取消
 		return false
 	}
@@ -68,11 +68,11 @@ func (tw *TimingWheel) Add(task *Task) bool {
 			}
 			tw.rw.Unlock()
 		}
-		return tw.overflowWheel.Add(task)
+		return tw.overflowWheel.add(task)
 	}
 }
 
-func (tw *TimingWheel) AdvanceClock(timeMs int64) {
+func (tw *TimingWheel) advanceClock(timeMs int64) {
 	tw.rw.Lock()
 	if timeMs >= tw.currentTime+tw.tickMs {
 		currentTime := timeMs - (timeMs % tw.tickMs)
@@ -80,7 +80,7 @@ func (tw *TimingWheel) AdvanceClock(timeMs int64) {
 		overflowWheel := tw.overflowWheel
 		tw.rw.Unlock()
 		if overflowWheel != nil {
-			overflowWheel.AdvanceClock(currentTime)
+			overflowWheel.advanceClock(currentTime)
 		}
 	} else {
 		tw.rw.Unlock()

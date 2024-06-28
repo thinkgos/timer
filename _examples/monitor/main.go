@@ -28,7 +28,6 @@ func newPo() *po {
 }
 
 var defaultPool = newPo()
-
 var tim = timer.NewTimer(timer.WithGoPool(defaultPool))
 
 func init() {
@@ -51,11 +50,18 @@ func main() {
 				defaultPool.Go(func() {
 					sum.Add(1)
 					delayms := int64(ii) * 20
-					j := &job{
+					task := timer.NewTask(time.Duration(delayms) * time.Millisecond).WithJob(&job{
 						sum:          sum,
 						expirationMs: time.Now().UnixMilli() + delayms,
-					}
-					tim.AddTask(timer.NewTask(delayms).WithJob(j))
+					})
+					tim.AddTask(task)
+
+					// for test race
+					// if ii%0x03 == 0x00 {
+					// 	defaultPool.Go(func() {
+					// 		task.Cancel()
+					// 	})
+					// }
 				})
 			}
 			log.Printf("task: %v - %v added: %d", tim.TaskCounter(), sum.Load(), added)

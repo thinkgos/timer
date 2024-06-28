@@ -1,6 +1,7 @@
 package timer
 
 import (
+	"errors"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -10,7 +11,17 @@ import (
 
 const defaultWheelSize = 1024
 
-var goroutinePool = goroutine{}
+var (
+	ErrClosed = errors.New("timer: use of closed timer")
+	// closedchan is a reusable closed channel.
+	closedchan = make(chan struct{})
+	// goroutinePool is a reusable go pool.
+	goroutinePool = goroutine{}
+)
+
+func init() {
+	close(closedchan)
+}
 
 type GoPool interface {
 	Go(f func())
@@ -65,6 +76,7 @@ func NewTimer(opts ...Option) *Timer {
 		taskCounter: atomic.Int64{},
 		delayQueue:  delayqueue.NewDelayQueue[*Spoke](),
 		goPool:      goroutinePool,
+		quit:        closedchan,
 		closed:      true,
 	}
 	for _, opt := range opts {
@@ -87,18 +99,23 @@ func (t *Timer) TickMs() int64      { return t.tickMs }
 func (t *Timer) WheelSize() int     { return t.wheelSize }
 func (t *Timer) TaskCounter() int64 { return t.taskCounter.Load() }
 
-func (t *Timer) AfterFunc(d time.Duration, f func()) *Task {
-	task := NewTask(int64(d / time.Millisecond)).WithJobFunc(f)
-	t.AddTask(task)
-	return task
+func (t *Timer) AfterFunc(d time.Duration, f func()) (*Task, error) {
+	task := NewTask(d).WithJobFunc(f)
+	err := t.AddTask(task)
+	if err != nil {
+		return nil, err
+	}
+	return task, nil
 }
 
-func (t *Timer) AddTask(task *Task) {
-	if !t.wheel.Add(task) {
-		if !task.cancelled() {
-			t.goPool.Go(task.Run)
-		}
+func (t *Timer) AddTask(task *Task) error {
+	select {
+	case <-t.quit:
+		return ErrClosed
+	default:
+		t.addTask(task)
 	}
+	return nil
 }
 
 // Started have started or not.
@@ -122,7 +139,7 @@ func (t *Timer) Start() {
 				if exit {
 					break
 				}
-				t.wheel.AdvanceClock(spoke.GetExpiration())
+				t.wheel.advanceClock(spoke.GetExpiration())
 				spoke.Flush(t.reinsert)
 			}
 		}()
@@ -143,6 +160,14 @@ func (t *Timer) addToDelayQueue(spoke *Spoke) {
 	t.delayQueue.Add(spoke)
 }
 
+func (t *Timer) addTask(task *Task) {
+	if !t.wheel.add(task) {
+		if !task.cancelled() {
+			t.goPool.Go(task.Run)
+		}
+	}
+}
+
 func (t *Timer) reinsert(task *Task) {
-	t.AddTask(task)
+	t.addTask(task)
 }
