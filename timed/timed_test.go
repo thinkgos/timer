@@ -10,7 +10,7 @@ import (
 )
 
 func Test_Timed(t *testing.T) {
-	require.Equal(t, timer.DefaultTickMs, TickMs())
+	require.Equal(t, int64(timer.DefaultTickMs), TickMs())
 	require.Equal(t, timer.DefaultWheelSize, WheelSize())
 	require.GreaterOrEqual(t, TaskCounter(), int64(0))
 }

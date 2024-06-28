@@ -55,8 +55,8 @@ func Test_Task_RecoverPanic(t *testing.T) {
 
 func Test_Task_Cancel(t *testing.T) {
 	task := NewTask(100 * time.Millisecond)
-	require.False(t, task.cancelled())
+	require.False(t, task.Cancelled())
 
 	task.Cancel()
-	require.True(t, task.cancelled())
+	require.True(t, task.Cancelled())
 }

@@ -10,11 +10,14 @@ import (
 )
 
 const (
-	DefaultTickMs    int64 = 1
-	DefaultWheelSize       = 1024
+	// DefaultTickMs default tick milliseconds.
+	DefaultTickMs = 1
+	// DefaultWheelSize default wheel size.
+	DefaultWheelSize = 1024
 )
 
 var (
+	// ErrClosed is returned when the timer is closed.
 	ErrClosed = errors.New("timer: use of closed timer")
 	// closedchan is a reusable closed channel.
 	closedchan = make(chan struct{})
@@ -26,42 +29,47 @@ func init() {
 	close(closedchan)
 }
 
+// GoPool goroutine pool.
 type GoPool interface {
 	Go(f func())
 }
 
 type goroutine struct{}
 
+// Go implements GoPool interface.
 func (goroutine) Go(f func()) {
 	go f()
 }
 
 type Option func(*Timer)
 
-// WithTickMs 设置基本时间跨度
+// WithTickMs set basic time tick milliseconds.
 func WithTickMs(tickMs int64) Option {
 	return func(t *Timer) {
 		t.tickMs = tickMs
 	}
 }
 
-// WithWheelSize 设置时间轮大小
+// WithWheelSize set wheel size.
 func WithWheelSize(size int) Option {
 	return func(t *Timer) {
 		t.wheelSize = NextPowOf2(size)
+		t.wheelMask = t.wheelSize - 1
 	}
 }
 
-// WithGoPool 设置协程池
+// WithGoPool set goroutine pool.
 func WithGoPool(p GoPool) Option {
 	return func(t *Timer) {
 		t.goPool = p
 	}
 }
 
+// Timer is a timer
 type Timer struct {
 	tickMs      int64                          // 基本时间跨度, 单位ms
 	wheelSize   int                            // 轮的大小, 2的n次方
+	wheelMask   int                            // 轮的掩码
 	taskCounter atomic.Int64                   // 任务总数
 	delayQueue  *delayqueue.DelayQueue[*Spoke] // 延迟队列
 	wheel       *TimingWheel                   // 时间轮
@@ -76,6 +84,7 @@ func NewTimer(opts ...Option) *Timer {
 	t := &Timer{
 		tickMs:      DefaultTickMs,
 		wheelSize:   DefaultWheelSize,
+		wheelMask:   DefaultWheelSize - 1,
 		taskCounter: atomic.Int64{},
 		delayQueue:  delayqueue.NewDelayQueue[*Spoke](),
 		goPool:      goroutinePool,
@@ -98,13 +107,16 @@ func NewTimer(opts ...Option) *Timer {
 	return t
 }
 
-// TickMs Basic time tick milliseconds.
+// TickMs basic time tick milliseconds.
 func (t *Timer) TickMs() int64 { return t.tickMs }
 
 // WheelSize wheel size.
 func (t *Timer) WheelSize() int { return t.wheelSize }
 
-// TaskCounter task total number of tasks.
+// WheelMask wheel mask.
+func (t *Timer) WheelMask() int { return t.wheelMask }
+
+// TaskCounter the total number of tasks.
 func (t *Timer) TaskCounter() int64 { return t.taskCounter.Load() }
 
 // AfterFunc adds a function to the timer.
@@ -172,7 +184,7 @@ func (t *Timer) addToDelayQueue(spoke *Spoke) {
 
 func (t *Timer) addTask(task *Task) {
 	if !t.wheel.add(task) {
-		if !task.cancelled() {
+		if !task.Cancelled() {
 			t.goPool.Go(task.Run)
 		}
 	}

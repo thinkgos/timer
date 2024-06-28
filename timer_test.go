@@ -11,7 +11,7 @@ import (
 func Test_Timer_Init(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		tm := NewTimer()
-		require.Equal(t, DefaultTickMs, tm.TickMs())
+		require.Equal(t, int64(DefaultTickMs), tm.TickMs())
 		require.Equal(t, DefaultWheelSize, tm.WheelSize())
 		require.Equal(t, int64(0), tm.TaskCounter())
 	})
@@ -19,6 +19,7 @@ func Test_Timer_Init(t *testing.T) {
 		tm := NewTimer(WithTickMs(2), WithWheelSize(16), WithGoPool(goroutinePool))
 		require.Equal(t, int64(2), tm.TickMs())
 		require.Equal(t, 16, tm.WheelSize())
+		require.Equal(t, 0xf, tm.WheelMask())
 		require.Equal(t, int64(0), tm.TaskCounter())
 	})
 

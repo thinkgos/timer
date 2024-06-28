@@ -89,9 +89,10 @@ func (t *Task) Delay() time.Duration { return time.Duration(t.delayMs) * time.Mi
 // ExpirationMs expiration milliseconds.
 func (t *Task) ExpirationMs() int64 { return t.expirationMs }
 
-func (t *Task) cancelled() bool { return t.hasCancelled.Load() }
+// Cancelled return tru if the task is cancelled.
+func (t *Task) Cancelled() bool { return t.hasCancelled.Load() }
 
-// nextTask 返回列表上的下一项, 如果没有返回nil
+// nextTask return the next task or nil.
 func (t *Task) nextTask() *Task {
 	if p, list := t.next, t.list.Load(); list != nil && p != &list.root {
 		return p

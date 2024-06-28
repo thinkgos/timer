@@ -5,8 +5,10 @@ import (
 	"sort"
 )
 
-var _ heap.Interface = (*Container[Int])(nil)
-var _ sort.Interface = (*Container[Int])(nil)
+var (
+	_ heap.Interface = (*Container[Int])(nil)
+	_ sort.Interface = (*Container[Int])(nil)
+)
 
 type Container[T Comparable] struct {
 	Items []T  // container data

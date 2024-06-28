@@ -31,21 +31,21 @@ func newTimingWheel(t *Timer, tickMs int64, startMs int64) *TimingWheel {
 // add 加到时间轮上
 // true:添加成功, false: 已取消或已过期
 func (tw *TimingWheel) add(task *Task) bool {
-	if task.cancelled() { // 已取消
+	if task.Cancelled() { // already cancelled
 		return false
 	}
 
 	expiration := task.ExpirationMs()
 	tw.rw.RLock()
 	switch {
-	case expiration < tw.currentTime+tw.tickMs: // 已经过期了
+	case expiration < tw.currentTime+tw.tickMs: // already expired
 		tw.rw.RUnlock()
 		return false
-	case expiration < tw.currentTime+tw.interval: // 在当前时间轮上
+	case expiration < tw.currentTime+tw.interval: // on the current time wheel
 		tw.rw.RUnlock()
 		// Put in its own spoke
 		virtualId := expiration / tw.tickMs
-		spoke := tw.spokes[int(virtualId)&(tw.timer.WheelSize()-1)]
+		spoke := tw.spokes[int(virtualId)&tw.timer.WheelMask()]
 		spoke.Add(task)
 
 		// Set the spoke expiration time
@@ -58,7 +58,7 @@ func (tw *TimingWheel) add(task *Task) bool {
 			tw.timer.addToDelayQueue(spoke)
 		}
 		return true
-	default: // 不在当前轮上, 加入高一级时间轮.
+	default: // not on the current wheel, add a high-level time wheel.
 		needInit := tw.overflowWheel == nil
 		tw.rw.RUnlock()
 		if needInit {

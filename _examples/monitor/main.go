@@ -13,6 +13,7 @@ import (
 	"github.com/thinkgos/timer/timed"
 )
 
+// almost 2,000,000 task
 func main() {
 	go func() {
 		sum := &atomic.Int64{}
@@ -21,7 +22,7 @@ func main() {
 			<-t.C
 			added := 0
 			ranv := rand.IntN(10)
-			max := int(rand.Uint32N(math.MaxUint16))
+			max := int(rand.Uint32N(math.MaxUint16 << 2))
 			for i := 100; i < max; i += 100 {
 				added++
 				ii := i + ranv

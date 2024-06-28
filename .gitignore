@@ -16,3 +16,5 @@
 .idea
 .vscode
 _test
+_examples/monitor/monitor
+_examples/sample/sample
