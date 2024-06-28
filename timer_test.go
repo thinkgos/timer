@@ -64,7 +64,7 @@ func ExampleTimer() {
 	_, _ = tm.AfterFunc(100*time.Millisecond, func() {
 		fmt.Println(100)
 	})
-	_ = tm.AddTask(NewTask(200 * time.Millisecond).WithJobFunc(func() {
+	_ = tm.AddTask(NewTask(1025 * time.Millisecond).WithJobFunc(func() {
 		fmt.Println(200)
 	}))
 	canceledTaskAfterAdd := NewTask(300 * time.Millisecond).WithJobFunc(func() {
@@ -77,7 +77,7 @@ func ExampleTimer() {
 	})
 	canceledTaskBeforeAdd.Cancel()
 	_ = tm.AddTask(canceledTaskBeforeAdd)
-	time.Sleep(time.Second)
+	time.Sleep(time.Second + time.Millisecond*200)
 	// Output:
 	// 100
 	// 200
