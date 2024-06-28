@@ -8,31 +8,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/panjf2000/ants/v2"
-	"github.com/thinkgos/timer"
-
 	_ "net/http/pprof"
+
+	"github.com/thinkgos/timer/timed"
 )
-
-type po struct {
-	p *ants.Pool
-}
-
-func (s *po) Go(f func()) {
-	s.p.Submit(f)
-}
-
-func newPo() *po {
-	var defaultAntsPool, _ = ants.NewPool(ants.DefaultAntsPoolSize)
-	return &po{p: defaultAntsPool}
-}
-
-var defaultPool = newPo()
-var tim = timer.NewTimer(timer.WithGoPool(defaultPool))
-
-func init() {
-	tim.Start()
-}
 
 func main() {
 	go func() {
@@ -47,14 +26,14 @@ func main() {
 				added++
 				ii := i + ranv
 
-				defaultPool.Go(func() {
+				timed.Go(func() {
 					sum.Add(1)
 					delayms := int64(ii) * 20
-					task := timer.NewTask(time.Duration(delayms) * time.Millisecond).WithJob(&job{
+					task := timed.NewTask(time.Duration(delayms) * time.Millisecond).WithJob(&job{
 						sum:          sum,
 						expirationMs: time.Now().UnixMilli() + delayms,
 					})
-					tim.AddTask(task)
+					timed.AddTask(task)
 
 					// for test race
 					// if ii%0x03 == 0x00 {
@@ -64,7 +43,7 @@ func main() {
 					// }
 				})
 			}
-			log.Printf("task: %v - %v added: %d", tim.TaskCounter(), sum.Load(), added)
+			log.Printf("task: %v - %v added: %d", timed.TaskCounter(), sum.Load(), added)
 		}
 	}()
 

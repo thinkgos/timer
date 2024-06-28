@@ -9,6 +9,9 @@ Go implementation of Kafka's Hierarchical Timing Wheels.
 [![Licence](https://img.shields.io/github/license/thinkgos/timer)](https://raw.githubusercontent.com/thinkgos/timer/main/LICENSE)
 [![Tag](https://img.shields.io/github/v/tag/thinkgos/timer)](https://github.com/thinkgos/timer/tags)
 
+- `timer` Go implementation of Kafka's Hierarchical Timing Wheels.
+- `timed` global `timer` instance, that tick is 1ms. wheel size is 1024, use [ants](https://github.com/panjf2000/ants) goroutine pool.
+
 ## Usage
 
 ### Installation
@@ -36,23 +39,20 @@ import (
 	"sync"
 	"time"
 
-	"github.com/thinkgos/timer"
+	"github.com/thinkgos/timer/timed"
 )
 
 func main() {
-	t := timer.NewTimer()
-	t.Start()
 	var wg sync.WaitGroup
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 1000; i++ {
 		wg.Add(1)
 		index := i
-		t.AfterFunc(time.Duration(i)*time.Second+time.Duration(i)*10*time.Millisecond, func() {
-			fmt.Printf("%s: timer task %d is executed, remain task: %d\n", time.Now().String(), index, t.TaskCounter())
+		_, _ = timed.AfterFunc(time.Duration(i)*100*time.Millisecond, func() {
+			fmt.Printf("%s: timer task %d is executed, remain task: %d\n", time.Now().String(), index, timed.TaskCounter())
 			wg.Done()
 		})
 	}
 	wg.Wait()
-	t.Stop()
 }
 ```
 

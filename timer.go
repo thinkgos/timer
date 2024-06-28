@@ -9,7 +9,10 @@ import (
 	"github.com/thinkgos/timer/delayqueue"
 )
 
-const defaultWheelSize = 1024
+const (
+	DefaultTickMs    int64 = 1
+	DefaultWheelSize       = 1024
+)
 
 var (
 	ErrClosed = errors.New("timer: use of closed timer")
@@ -71,8 +74,8 @@ type Timer struct {
 // NewTimer new timer instance. tick is 1 milliseconds, wheel size is 1024.
 func NewTimer(opts ...Option) *Timer {
 	t := &Timer{
-		tickMs:      1,
-		wheelSize:   defaultWheelSize,
+		tickMs:      DefaultTickMs,
+		wheelSize:   DefaultWheelSize,
 		taskCounter: atomic.Int64{},
 		delayQueue:  delayqueue.NewDelayQueue[*Spoke](),
 		goPool:      goroutinePool,

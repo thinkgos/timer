@@ -5,21 +5,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/thinkgos/timer"
+	"github.com/thinkgos/timer/timed"
 )
 
 func main() {
-	t := timer.NewTimer()
-	t.Start()
 	var wg sync.WaitGroup
 	for i := 0; i < 1000; i++ {
 		wg.Add(1)
 		index := i
-		t.AfterFunc(time.Duration(i)*time.Millisecond, func() {
-			fmt.Printf("%d: timer task %d is executed, remain task: %d\n", time.Now().UnixMilli(), index, t.TaskCounter())
+		_, _ = timed.AfterFunc(time.Duration(i)*100*time.Millisecond, func() {
+			fmt.Printf("%s: timer task %d is executed, remain task: %d\n", time.Now().String(), index, timed.TaskCounter())
 			wg.Done()
 		})
 	}
 	wg.Wait()
-	t.Stop()
 }

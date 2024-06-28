@@ -11,8 +11,8 @@ import (
 func Test_Timer_Init(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		tm := NewTimer()
-		require.Equal(t, int64(1), tm.TickMs())
-		require.Equal(t, defaultWheelSize, tm.WheelSize())
+		require.Equal(t, DefaultTickMs, tm.TickMs())
+		require.Equal(t, DefaultWheelSize, tm.WheelSize())
 		require.Equal(t, int64(0), tm.TaskCounter())
 	})
 	t.Run("custom", func(t *testing.T) {
@@ -78,6 +78,7 @@ func ExampleTimer() {
 	canceledTaskBeforeAdd.Cancel()
 	_ = tm.AddTask(canceledTaskBeforeAdd)
 	time.Sleep(time.Second + time.Millisecond*200)
+	tm.Stop()
 	// Output:
 	// 100
 	// 200
