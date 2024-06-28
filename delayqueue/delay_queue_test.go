@@ -68,7 +68,7 @@ func Test_DelayQueue_Empty_Begin(t *testing.T) {
 	}()
 	go func() {
 		time.Sleep(time.Millisecond * 20)
-		d3 := &delay{"d3", time.Now().UnixMilli() + 90}
+		d3 := &delay{"d3", time.Now().UnixMilli() + 50}
 		dq.Add(d3)
 	}()
 
