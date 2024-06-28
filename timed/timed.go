@@ -47,14 +47,13 @@ func NewTask(d time.Duration) *Task { return timer.NewTask(d) }
 // NewTaskFunc new task with delay duration and function job, the accuracy is milliseconds.
 func NewTaskFunc(d time.Duration, f func()) *Task { return timer.NewTaskFunc(d, f) }
 
-// use ants go pool, if submit task failure, fallback to goroutine.
 type wrapperAnts struct{}
 
 func (s wrapperAnts) Go(f func()) {
 	Go(f)
 }
 
-// Go run a function in the pool, if pool submit failure, fallback to goroutine.
+// Go run a function in `ants` goroutine pool, if submit failed, fallback to use goroutine.
 func Go(f func()) {
 	if err := ants.Submit(f); err != nil {
 		go f()

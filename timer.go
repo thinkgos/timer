@@ -98,10 +98,16 @@ func NewTimer(opts ...Option) *Timer {
 	return t
 }
 
-func (t *Timer) TickMs() int64      { return t.tickMs }
-func (t *Timer) WheelSize() int     { return t.wheelSize }
+// TickMs Basic time tick milliseconds.
+func (t *Timer) TickMs() int64 { return t.tickMs }
+
+// WheelSize wheel size.
+func (t *Timer) WheelSize() int { return t.wheelSize }
+
+// TaskCounter task total number of tasks.
 func (t *Timer) TaskCounter() int64 { return t.taskCounter.Load() }
 
+// AfterFunc adds a function to the timer.
 func (t *Timer) AfterFunc(d time.Duration, f func()) (*Task, error) {
 	task := NewTask(d).WithJobFunc(f)
 	err := t.AddTask(task)
@@ -111,6 +117,7 @@ func (t *Timer) AfterFunc(d time.Duration, f func()) (*Task, error) {
 	return task, nil
 }
 
+// AddTask adds a task to the timer.
 func (t *Timer) AddTask(task *Task) error {
 	select {
 	case <-t.quit:
