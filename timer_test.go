@@ -62,12 +62,15 @@ func Test_Timer_Start_Stop_Restart(t *testing.T) {
 func ExampleTimer() {
 	tm := NewTimer()
 	tm.Start()
-	_, _ = tm.AfterFunc(100*time.Millisecond, func() {
+
+	t := NewTask(100 * time.Millisecond).WithJobFunc(func() {
 		fmt.Println(100)
 	})
-	_ = tm.AddTask(NewTask(1025 * time.Millisecond).WithJobFunc(func() {
+	_ = tm.AddTask(t)
+	_, _ = tm.AfterFunc(1025*time.Millisecond, func() {
 		fmt.Println(200)
-	}))
+	})
+
 	canceledTaskAfterAdd := NewTask(300 * time.Millisecond).WithJobFunc(func() {
 		fmt.Println("canceled after add")
 	})
@@ -78,9 +81,12 @@ func ExampleTimer() {
 	})
 	canceledTaskBeforeAdd.Cancel()
 	_ = tm.AddTask(canceledTaskBeforeAdd)
+	time.Sleep(time.Millisecond * 500)
+	_ = tm.AddTask(t.Reset())
 	time.Sleep(time.Second + time.Millisecond*200)
 	tm.Stop()
 	// Output:
+	// 100
 	// 100
 	// 200
 }

@@ -9,9 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	wantJobValue int64 = 6666
-)
+const testWantJobValue int64 = 6666
 
 type testJob struct {
 	val atomic.Int64
@@ -26,7 +24,7 @@ func (t *testJob) Value() int64 {
 	return t.val.Load()
 }
 func (t *testJob) Run() {
-	t.val.Store(wantJobValue)
+	t.val.Store(testWantJobValue)
 }
 
 func Test_Task_Job(t *testing.T) {
@@ -34,12 +32,12 @@ func Test_Task_Job(t *testing.T) {
 	task := NewTask(100 * time.Millisecond).WithJob(job)
 	require.Equal(t, 100*time.Millisecond, task.Delay())
 	task.Run()
-	require.Equal(t, wantJobValue, job.Value())
+	require.Equal(t, testWantJobValue, job.Value())
 
 	job1 := newTestJob(101)
 	task1 := NewTaskFunc(101*time.Millisecond, job1.Run)
 	task1.Run()
-	require.Equal(t, wantJobValue, job1.Value())
+	require.Equal(t, testWantJobValue, job1.Value())
 
 	// empty job
 	task2 := NewTask(101 * time.Millisecond)
@@ -59,4 +57,7 @@ func Test_Task_Cancel(t *testing.T) {
 
 	task.Cancel()
 	require.True(t, task.Cancelled())
+
+	task.Reset()
+	require.False(t, task.Cancelled())
 }
