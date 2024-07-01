@@ -2,12 +2,12 @@ package comparator
 
 import (
 	"cmp"
-	"container/heap"
 	"slices"
 	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/thinkgos/timer/go/heap"
 )
 
 func Test_Container_Sort(t *testing.T) {
@@ -43,11 +43,11 @@ func Test_Container_Heap(t *testing.T) {
 		Desc:    false,
 		Compare: cmp.Compare[int],
 	}
-	heap.Init(c1)
+	heap.Init[int](c1)
 	heap.Push(c1, int(11))
 	heap.Push(c1, int(12))
 	for _, v := range []int{1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12} {
-		require.Equal(t, v, heap.Pop(c1).(int))
+		require.Equal(t, v, heap.Pop(c1))
 	}
 	require.Zero(t, c1.Len())
 
@@ -61,7 +61,7 @@ func Test_Container_Heap(t *testing.T) {
 	heap.Push(c2, int(11))
 	heap.Push(c2, int(12))
 	for _, v := range []int{12, 11, 10, 9, 8, 7, 6, 5, 3, 2, 1} {
-		require.Equal(t, v, heap.Pop(c2).(int))
+		require.Equal(t, v, heap.Pop(c2))
 	}
 	require.Zero(t, c2.Len())
 }

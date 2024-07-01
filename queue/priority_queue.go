@@ -2,9 +2,9 @@ package queue
 
 import (
 	"cmp"
-	"container/heap"
 
 	"github.com/thinkgos/timer/comparator"
+	"github.com/thinkgos/timer/go/heap"
 )
 
 // PriorityQueue represents an unbounded priority queue based on a priority heap.
@@ -61,7 +61,7 @@ func (pq *PriorityQueue[T]) Peek() (val T, exist bool) {
 // Pop retrieves and removes the head of the this queue, or return nil if this queue is empty.
 func (pq *PriorityQueue[T]) Pop() (val T, exist bool) {
 	if pq.Len() > 0 {
-		return heap.Pop(pq.container).(T), true
+		return heap.Pop(pq.container), true
 	}
 	return val, false
 }

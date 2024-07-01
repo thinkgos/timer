@@ -1,13 +1,14 @@
 package comparator
 
 import (
-	"container/heap"
 	"sort"
+
+	"github.com/thinkgos/timer/go/heap"
 )
 
 var (
-	_ heap.Interface = (*Container[int])(nil)
-	_ sort.Interface = (*Container[int])(nil)
+	_ heap.Interface[int] = (*Container[int])(nil)
+	_ sort.Interface      = (*Container[int])(nil)
 )
 
 type Container[T any] struct {
@@ -35,12 +36,12 @@ func (c Container[T]) Less(i, j int) bool {
 }
 
 // Push implement heap.Interface.
-func (c *Container[T]) Push(x any) {
-	c.Items = append(c.Items, x.(T))
+func (c *Container[T]) Push(x T) {
+	c.Items = append(c.Items, x)
 }
 
 // Pop implement heap.Interface.
-func (c *Container[T]) Pop() any {
+func (c *Container[T]) Pop() T {
 	var zero T
 
 	old := c.Items
