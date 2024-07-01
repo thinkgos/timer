@@ -32,20 +32,20 @@ type Task struct {
 	list atomic.Pointer[Spoke] // 此元素所属的列表
 
 	// follow values associated with this element.
-	delayMs      int64        // 延迟多少, 单位: ms
-	expirationMs atomic.Int64 // 到期时间, 绝对时间, 单位: ms
-	job          Job          // 未来执行的工作任务
-	hasCancelled atomic.Bool  // 是否取消
+	delayMs      int64       // 延迟多少, 单位: ms
+	expirationMs int64       // 到期时间, 绝对时间, 单位: ms
+	job          Job         // 未来执行的工作任务
+	hasCancelled atomic.Bool // 是否取消
 }
 
 // NewTask new task with delay duration and empty job, the accuracy is milliseconds.
 func NewTask(d time.Duration) *Task {
-	t := &Task{
-		delayMs: int64(d / time.Millisecond),
-		job:     emptyJob,
+	delayMs := int64(d / time.Millisecond)
+	return &Task{
+		delayMs:      delayMs,
+		expirationMs: delayMs + time.Now().UnixMilli(),
+		job:          emptyJob,
 	}
-	t.expirationMs.Store(t.delayMs + time.Now().UnixMilli())
-	return t
 }
 
 // NewTaskFunc new task with delay duration and function job, the accuracy is milliseconds.
@@ -75,17 +75,11 @@ func (t *Task) Run() {
 	t.job.Run()
 }
 
-// Reset the task, remove from the list and reset to new expiration time.
-func (t *Task) Reset() *Task {
-	t.removeSelf()
-	t.expirationMs.Store(t.delayMs + time.Now().UnixMilli())
-	t.hasCancelled.Store(false)
-	return t
-}
-
 // Cancel the task
 func (t *Task) Cancel() {
-	t.removeSelf()
+	if t.list.Load() != nil {
+		t.removeSelf()
+	}
 	t.hasCancelled.Store(true)
 }
 
@@ -93,9 +87,9 @@ func (t *Task) Cancel() {
 func (t *Task) Delay() time.Duration { return time.Duration(t.delayMs) * time.Millisecond }
 
 // ExpirationMs expiration milliseconds.
-func (t *Task) ExpirationMs() int64 { return t.expirationMs.Load() }
+func (t *Task) ExpirationMs() int64 { return t.expirationMs }
 
-// Cancelled return true if the task is cancelled.
+// Cancelled return tru if the task is cancelled.
 func (t *Task) Cancelled() bool { return t.hasCancelled.Load() }
 
 // nextTask return the next task or nil.
