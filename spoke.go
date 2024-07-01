@@ -11,9 +11,10 @@ import (
 
 var _ delayqueue.Delayed = (*Spoke)(nil)
 
+// Spoke a spoke of the wheel.
 type Spoke struct {
 	root        Task // sentinel list element, only &root, root.prev, and root.next are used
-	len         int  // number of elements
+	len         int  // current list length excluding (this) sentinel element
 	taskCounter *atomic.Int64
 	expiration  atomic.Int64
 	mu          sync.Mutex
@@ -29,7 +30,7 @@ func NewSpoke(taskCounter *atomic.Int64) *Spoke {
 	return sp
 }
 
-// Add a timer task to this list
+// Add the timer task to this list
 func (sp *Spoke) Add(task *Task) {
 	for done := false; !done; {
 		// Remove the timer task if it is already in any other list
@@ -39,16 +40,7 @@ func (sp *Spoke) Add(task *Task) {
 		if task.list.Load() == nil { // fast check.
 			sp.mu.Lock()
 			if task.list.Load() == nil { // double check but slow.
-				at := sp.root.prev
-
-				task.prev = at
-				task.next = at.next
-				task.prev.next = task
-				task.next.prev = task
-
-				task.list.Store(sp)
-				sp.len++
-				sp.taskCounter.Add(1)
+				sp.pushBack(task)
 				done = true
 			}
 			sp.mu.Unlock()
@@ -60,19 +52,31 @@ func (sp *Spoke) Add(task *Task) {
 func (sp *Spoke) Remove(task *Task) {
 	sp.mu.Lock()
 	defer sp.mu.Unlock()
-	sp.remove(task)
+	if task.list.Load() == sp {
+		sp.remove(task)
+	}
+}
+
+func (sp *Spoke) pushBack(task *Task) {
+	at := sp.root.prev
+
+	task.prev = at
+	task.next = at.next
+	task.prev.next = task
+	task.next.prev = task
+	task.list.Store(sp)
+	sp.len++
+	sp.taskCounter.Add(1)
 }
 
 func (sp *Spoke) remove(task *Task) {
-	if task.list.Load() == sp {
-		task.prev.next = task.next
-		task.next.prev = task.prev
-		task.next = nil // avoid memory leaks
-		task.prev = nil // avoid memory leaks
-		task.list.Store(nil)
-		sp.len--
-		sp.taskCounter.Add(-1)
-	}
+	task.prev.next = task.next
+	task.next.prev = task.prev
+	task.next = nil // avoid memory leaks
+	task.prev = nil // avoid memory leaks
+	task.list.Store(nil)
+	sp.len--
+	sp.taskCounter.Add(-1)
 }
 
 // Front returns the first task of list l or nil if the list is empty.
@@ -106,6 +110,7 @@ func (sp *Spoke) SetExpiration(expirationMs int64) bool {
 // Get the spoke's expiration time
 func (sp *Spoke) GetExpiration() int64 { return sp.expiration.Load() }
 
+// DelayMs implements delayqueue.Delayed.
 func (sp *Spoke) DelayMs() int64 {
 	delay := sp.GetExpiration() - time.Now().UnixMilli()
 	if delay < 0 {
@@ -114,6 +119,7 @@ func (sp *Spoke) DelayMs() int64 {
 	return delay
 }
 
+// CompareTo implements queue.Comparable. compare two `Spoke`.
 func (sp *Spoke) CompareTo(sp2 queue.Comparable) int {
 	v1, v2 := sp.GetExpiration(), sp2.(*Spoke).GetExpiration()
 	if v1 < v2 {

@@ -41,6 +41,7 @@ func (goroutine) Go(f func()) {
 	go f()
 }
 
+// Option `Timer` custom options.
 type Option func(*Timer)
 
 // WithTickMs set basic time tick milliseconds.
