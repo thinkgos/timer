@@ -9,12 +9,12 @@ import (
 	"github.com/thinkgos/timer/queue"
 )
 
-type Delayed[T any] interface {
+type Delayed interface {
 	DelayMs() int64
-	comparator.Comparable[T]
+	comparable
 }
 
-type DelayQueue[T Delayed[T]] struct {
+type DelayQueue[T Delayed] struct {
 	notify        chan struct{}           // notify channel
 	phantom       T                       // phantom data for T, not any used, just placeholder for Take function, when exit.
 	mu            sync.Mutex              // protects following fields
@@ -22,9 +22,9 @@ type DelayQueue[T Delayed[T]] struct {
 	waiting       atomic.Bool             // waiting or not.
 }
 
-func NewDelayQueue[T Delayed[T]]() *DelayQueue[T] {
+func NewDelayQueue[T Delayed](cmp comparator.Comparable[T]) *DelayQueue[T] {
 	return &DelayQueue[T]{
-		priorityQueue: queue.NewPriorityQueue[T](false),
+		priorityQueue: queue.NewPriorityQueueWith(false, cmp),
 		notify:        make(chan struct{}, 1),
 	}
 }
@@ -33,7 +33,7 @@ func (dq *DelayQueue[T]) Add(val T) {
 	dq.mu.Lock()
 	dq.priorityQueue.Push(val)
 	first, exist := dq.priorityQueue.Peek()
-	wakeup := exist && first.CompareTo(val) == 0 && dq.waiting.CompareAndSwap(true, false)
+	wakeup := exist && first == val && dq.waiting.CompareAndSwap(true, false)
 	dq.mu.Unlock()
 	if wakeup {
 		select {

@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"cmp"
 	"container/heap"
 
 	"github.com/thinkgos/timer/comparator"
@@ -8,16 +9,29 @@ import (
 
 // PriorityQueue represents an unbounded priority queue based on a priority heap.
 // It implements heap.Interface.
-type PriorityQueue[T comparator.Comparable[T]] struct {
+type PriorityQueue[T comparable] struct {
 	container *comparator.Container[T]
 }
 
-// NewPriorityQueue initializes and returns an Queue, default min heap.
-func NewPriorityQueue[T comparator.Comparable[T]](maxHeap bool, items ...T) *PriorityQueue[T] {
+func NewPriorityQueue[T cmp.Ordered](maxHeap bool, items ...T) *PriorityQueue[T] {
 	q := &PriorityQueue[T]{
 		container: &comparator.Container[T]{
-			Items: items,
-			Desc:  maxHeap,
+			Items:   items,
+			Desc:    maxHeap,
+			Compare: cmp.Compare[T],
+		},
+	}
+	heap.Init(q.container)
+	return q
+}
+
+// NewPriorityQueue initializes and returns an Queue, default min heap.
+func NewPriorityQueueWith[T comparable](maxHeap bool, cmp comparator.Comparable[T], items ...T) *PriorityQueue[T] {
+	q := &PriorityQueue[T]{
+		container: &comparator.Container[T]{
+			Items:   items,
+			Desc:    maxHeap,
+			Compare: cmp,
 		},
 	}
 	heap.Init(q.container)

@@ -22,7 +22,7 @@ func (d delay) DelayMs() int64 {
 	return atomic.LoadInt64(&d.value) - time.Now().UnixMilli()
 }
 
-func (v1 *delay) CompareTo(v2 *delay) int {
+func compareDelay(v1 *delay, v2 *delay) int {
 	vv2 := v2
 
 	if v1.Value() < vv2.Value() {
@@ -35,7 +35,7 @@ func (v1 *delay) CompareTo(v2 *delay) int {
 }
 
 func Test_DelayQueue(t *testing.T) {
-	dq := NewDelayQueue[*delay]()
+	dq := NewDelayQueue[*delay](compareDelay)
 
 	d1 := &delay{"d1", time.Now().UnixMilli() + 100}
 	d2 := &delay{"d2", time.Now().UnixMilli() + 200}
@@ -53,7 +53,7 @@ func Test_DelayQueue(t *testing.T) {
 }
 
 func Test_DelayQueue_Empty_Begin(t *testing.T) {
-	dq := NewDelayQueue[*delay]()
+	dq := NewDelayQueue[*delay](compareDelay)
 
 	go func() {
 		time.Sleep(time.Millisecond * 20)
@@ -88,7 +88,7 @@ func Test_DelayQueue_Empty_Begin(t *testing.T) {
 }
 
 func Test_DelayQueue_Quit(t *testing.T) {
-	dq := NewDelayQueue[*delay]()
+	dq := NewDelayQueue[*delay](compareDelay)
 
 	d1 := &delay{"d1", time.Now().UnixMilli() + 100}
 	d2 := &delay{"d2", time.Now().UnixMilli() + 200}
@@ -113,7 +113,7 @@ func Test_DelayQueue_Quit(t *testing.T) {
 }
 
 func Test_DelayQueue_Quit_Empty_Begin(t *testing.T) {
-	dq := NewDelayQueue[*delay]()
+	dq := NewDelayQueue[*delay](compareDelay)
 
 	go func() {
 		time.Sleep(time.Millisecond * 50)

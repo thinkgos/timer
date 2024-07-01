@@ -87,7 +87,7 @@ func NewTimer(opts ...Option) *Timer {
 		wheelSize:   DefaultWheelSize,
 		wheelMask:   DefaultWheelSize - 1,
 		taskCounter: atomic.Int64{},
-		delayQueue:  delayqueue.NewDelayQueue[*Spoke](),
+		delayQueue:  delayqueue.NewDelayQueue(compareSpoke),
 		goPool:      goroutinePool,
 		quit:        closedchan,
 		closed:      true,

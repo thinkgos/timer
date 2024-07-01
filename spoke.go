@@ -4,11 +4,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/thinkgos/timer/delayqueue"
 )
-
-var _ delayqueue.Delayed[*Spoke] = (*Spoke)(nil)
 
 // Spoke a spoke of the wheel.
 type Spoke struct {
@@ -118,9 +114,9 @@ func (sp *Spoke) DelayMs() int64 {
 	return delay
 }
 
-// CompareTo implements queue.Comparable. compare two `Spoke`.
-func (sp *Spoke) CompareTo(sp2 *Spoke) int {
-	v1, v2 := sp.GetExpiration(), sp2.GetExpiration()
+// compareSpoke compare two `Spoke`.
+func compareSpoke(sp1, sp2 *Spoke) int {
+	v1, v2 := sp1.GetExpiration(), sp2.GetExpiration()
 	if v1 < v2 {
 		return -1
 	}

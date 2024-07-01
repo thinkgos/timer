@@ -6,13 +6,14 @@ import (
 )
 
 var (
-	_ heap.Interface = (*Container[Int])(nil)
-	_ sort.Interface = (*Container[Int])(nil)
+	_ heap.Interface = (*Container[int])(nil)
+	_ sort.Interface = (*Container[int])(nil)
 )
 
-type Container[T Comparable[T]] struct {
-	Items []T  // container data
-	Desc  bool // asc or desc, default asc.
+type Container[T any] struct {
+	Items   []T           // container data
+	Desc    bool          // asc or desc, default asc.
+	Compare Comparable[T] // cmp.Compare or custom comparison
 }
 
 // Len implement heap.Interface.
@@ -30,7 +31,7 @@ func (c Container[T]) Less(i, j int) bool {
 	if c.Desc {
 		i, j = j, i
 	}
-	return c.Items[i].CompareTo(c.Items[j]) < 0
+	return c.Compare(c.Items[i], c.Items[j]) < 0
 }
 
 // Push implement heap.Interface.
