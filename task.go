@@ -32,8 +32,8 @@ type Task struct {
 	list atomic.Pointer[Spoke] // 此元素所属的列表
 
 	// follow values associated with this element.
-	delayMs      int64       // 延迟多少, 单位: ms
-	expirationMs int64       // 到期时间, 绝对时间, 单位: ms
+	delayMs      int64       // 延迟多少(初始化后不可变), 单位: ms
+	expirationMs int64       // 到期时间, 绝对时间(初始化后不可变), 单位: ms
 	job          Job         // 未来执行的工作任务
 	hasCancelled atomic.Bool // 是否取消
 }
@@ -77,10 +77,8 @@ func (t *Task) Run() {
 
 // Cancel the task
 func (t *Task) Cancel() {
-	if t.list.Load() != nil {
-		t.removeSelf()
-	}
 	t.hasCancelled.Store(true)
+	t.removeSelf()
 }
 
 // Delay delay duration, the accuracy is milliseconds.
@@ -89,7 +87,7 @@ func (t *Task) Delay() time.Duration { return time.Duration(t.delayMs) * time.Mi
 // ExpirationMs expiration milliseconds.
 func (t *Task) ExpirationMs() int64 { return t.expirationMs }
 
-// Cancelled return tru if the task is cancelled.
+// Cancelled return true if the task is cancelled.
 func (t *Task) Cancelled() bool { return t.hasCancelled.Load() }
 
 // nextTask return the next task or nil.
