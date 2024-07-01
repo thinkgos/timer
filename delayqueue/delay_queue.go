@@ -5,15 +5,16 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/thinkgos/timer/comparator"
 	"github.com/thinkgos/timer/queue"
 )
 
-type Delayed interface {
+type Delayed[T any] interface {
 	DelayMs() int64
-	queue.Comparable
+	comparator.Comparable[T]
 }
 
-type DelayQueue[T Delayed] struct {
+type DelayQueue[T Delayed[T]] struct {
 	notify        chan struct{}           // notify channel
 	phantom       T                       // phantom data for T, not any used, just placeholder for Take function, when exit.
 	mu            sync.Mutex              // protects following fields
@@ -21,7 +22,7 @@ type DelayQueue[T Delayed] struct {
 	waiting       atomic.Bool             // waiting or not.
 }
 
-func NewDelayQueue[T Delayed]() *DelayQueue[T] {
+func NewDelayQueue[T Delayed[T]]() *DelayQueue[T] {
 	return &DelayQueue[T]{
 		priorityQueue: queue.NewPriorityQueue[T](false),
 		notify:        make(chan struct{}, 1),
@@ -30,7 +31,7 @@ func NewDelayQueue[T Delayed]() *DelayQueue[T] {
 
 func (dq *DelayQueue[T]) Add(val T) {
 	dq.mu.Lock()
-	dq.priorityQueue.Add(val)
+	dq.priorityQueue.Push(val)
 	first, exist := dq.priorityQueue.Peek()
 	wakeup := exist && first.CompareTo(val) == 0 && dq.waiting.CompareAndSwap(true, false)
 	dq.mu.Unlock()
@@ -42,7 +43,7 @@ func (dq *DelayQueue[T]) Add(val T) {
 	}
 }
 
-func (dq *DelayQueue[T]) Take(quit <-chan struct{}) (t T, exit bool) {
+func (dq *DelayQueue[T]) Take(quit <-chan struct{}) (val T, exit bool) {
 	for {
 		dq.mu.Lock()
 		head, exist := dq.priorityQueue.Peek()
@@ -59,7 +60,7 @@ func (dq *DelayQueue[T]) Take(quit <-chan struct{}) (t T, exit bool) {
 		} else {
 			delay := head.DelayMs()
 			if delay <= 0 {
-				dq.priorityQueue.Poll()
+				dq.priorityQueue.Pop()
 				dq.mu.Unlock()
 				return head, false
 			}

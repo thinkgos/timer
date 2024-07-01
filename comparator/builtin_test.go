@@ -1,4 +1,4 @@
-package queue
+package comparator
 
 import (
 	"testing"
@@ -8,12 +8,12 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
-type testCombine interface {
+type testCombine[T any] interface {
 	constraints.Ordered
-	Comparable
+	Comparable[T]
 }
 
-func pb_Test_Builtin[T testCombine](t *testing.T, v1, v2 T, want int) {
+func pb_Test_Builtin[T testCombine[T]](t *testing.T, v1, v2 T, want int) {
 	require.Equal(t, want, v1.CompareTo(v2))
 }
 

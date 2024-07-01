@@ -7,7 +7,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/thinkgos/timer/queue"
 )
 
 type delay struct {
@@ -23,8 +22,8 @@ func (d delay) DelayMs() int64 {
 	return atomic.LoadInt64(&d.value) - time.Now().UnixMilli()
 }
 
-func (v1 *delay) CompareTo(v2 queue.Comparable) int {
-	vv2 := v2.(*delay)
+func (v1 *delay) CompareTo(v2 *delay) int {
+	vv2 := v2
 
 	if v1.Value() < vv2.Value() {
 		return -1

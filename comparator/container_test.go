@@ -1,4 +1,4 @@
-package queue
+package comparator
 
 import (
 	"container/heap"

@@ -1,4 +1,4 @@
-package queue
+package comparator
 
 import (
 	"container/heap"
@@ -10,7 +10,7 @@ var (
 	_ sort.Interface = (*Container[Int])(nil)
 )
 
-type Container[T Comparable] struct {
+type Container[T Comparable[T]] struct {
 	Items []T  // container data
 	Desc  bool // asc or desc, default asc.
 }

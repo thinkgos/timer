@@ -6,10 +6,9 @@ import (
 	"time"
 
 	"github.com/thinkgos/timer/delayqueue"
-	"github.com/thinkgos/timer/queue"
 )
 
-var _ delayqueue.Delayed = (*Spoke)(nil)
+var _ delayqueue.Delayed[*Spoke] = (*Spoke)(nil)
 
 // Spoke a spoke of the wheel.
 type Spoke struct {
@@ -120,8 +119,8 @@ func (sp *Spoke) DelayMs() int64 {
 }
 
 // CompareTo implements queue.Comparable. compare two `Spoke`.
-func (sp *Spoke) CompareTo(sp2 queue.Comparable) int {
-	v1, v2 := sp.GetExpiration(), sp2.(*Spoke).GetExpiration()
+func (sp *Spoke) CompareTo(sp2 *Spoke) int {
+	v1, v2 := sp.GetExpiration(), sp2.GetExpiration()
 	if v1 < v2 {
 		return -1
 	}

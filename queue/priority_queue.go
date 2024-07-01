@@ -2,72 +2,52 @@ package queue
 
 import (
 	"container/heap"
+
+	"github.com/thinkgos/timer/comparator"
 )
 
 // PriorityQueue represents an unbounded priority queue based on a priority heap.
 // It implements heap.Interface.
-type PriorityQueue[T Comparable] struct {
-	data *Container[T]
+type PriorityQueue[T comparator.Comparable[T]] struct {
+	container *comparator.Container[T]
 }
 
 // NewPriorityQueue initializes and returns an Queue, default min heap.
-func NewPriorityQueue[T Comparable](maxHeap bool, items ...T) *PriorityQueue[T] {
+func NewPriorityQueue[T comparator.Comparable[T]](maxHeap bool, items ...T) *PriorityQueue[T] {
 	q := &PriorityQueue[T]{
-		data: &Container[T]{
+		container: &comparator.Container[T]{
 			Items: items,
 			Desc:  maxHeap,
 		},
 	}
-	heap.Init(q.data)
+	heap.Init(q.container)
 	return q
 }
 
 // Len returns the length of this priority queue.
-func (pq *PriorityQueue[T]) Len() int { return pq.data.Len() }
+func (pq *PriorityQueue[T]) Len() int { return pq.container.Len() }
 
 // IsEmpty returns true if this list contains no elements.
 func (pq *PriorityQueue[T]) IsEmpty() bool { return pq.Len() == 0 }
 
 // Clear removes all the elements from this priority queue.
-func (pq *PriorityQueue[T]) Clear() { pq.data.Items = make([]T, 0) }
+func (pq *PriorityQueue[T]) Clear() { pq.container.Items = make([]T, 0) }
 
-// Add inserts the specified element into this priority queue.
-func (pq *PriorityQueue[T]) Add(item T) {
-	heap.Push(pq.data, item)
-}
+// Push inserts the specified element into this priority queue.
+func (pq *PriorityQueue[T]) Push(item T) { heap.Push(pq.container, item) }
 
 // Peek retrieves, but does not remove, the head of this queue, or return nil if this queue is empty.
 func (pq *PriorityQueue[T]) Peek() (val T, exist bool) {
 	if pq.Len() > 0 {
-		return pq.data.Items[0], true
+		return pq.container.Items[0], true
 	}
 	return val, false
 }
 
-// Poll retrieves and removes the head of the this queue, or return nil if this queue is empty.
-func (pq *PriorityQueue[T]) Poll() (val T, exist bool) {
+// Pop retrieves and removes the head of the this queue, or return nil if this queue is empty.
+func (pq *PriorityQueue[T]) Pop() (val T, exist bool) {
 	if pq.Len() > 0 {
-		return heap.Pop(pq.data).(T), true
+		return heap.Pop(pq.container).(T), true
 	}
 	return val, false
-}
-
-// Contains returns true if this queue contains the specified element.
-func (pq *PriorityQueue[T]) Contains(val T) bool { return pq.indexOf(val) >= 0 }
-
-// Remove a single instance of the specified element from this queue, if it is present.
-// It returns false if the target value isn't present, otherwise returns true.
-func (pq *PriorityQueue[T]) Remove(val T) {
-	if idx := pq.indexOf(val); idx >= 0 {
-		heap.Remove(pq.data, idx)
-	}
-}
-
-func (pq *PriorityQueue[T]) indexOf(val T) int {
-	for i := 0; i < pq.Len(); i++ {
-		if val.CompareTo(pq.data.Items[i]) == 0 {
-			return i
-		}
-	}
-	return -1
 }
