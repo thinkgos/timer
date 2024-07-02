@@ -10,7 +10,7 @@ import (
 )
 
 type Delayed interface {
-	DelayMs() int64
+	Delay() int64
 	comparable
 }
 
@@ -43,7 +43,7 @@ func (dq *DelayQueue[T]) Add(val T) {
 	}
 }
 
-func (dq *DelayQueue[T]) Take(quit <-chan struct{}) (val T, exit bool) {
+func (dq *DelayQueue[T]) Take(timeUnit time.Duration, quit <-chan struct{}) (val T, exit bool) {
 	for {
 		dq.mu.Lock()
 		head, exist := dq.priorityQueue.Peek()
@@ -58,7 +58,7 @@ func (dq *DelayQueue[T]) Take(quit <-chan struct{}) (val T, exit bool) {
 				return dq.phantom, true
 			}
 		} else {
-			delay := head.DelayMs()
+			delay := head.Delay()
 			if delay <= 0 {
 				dq.priorityQueue.Pop()
 				dq.mu.Unlock()
@@ -66,7 +66,7 @@ func (dq *DelayQueue[T]) Take(quit <-chan struct{}) (val T, exit bool) {
 			}
 			dq.waiting.Store(true)
 			dq.mu.Unlock()
-			tm := time.NewTimer(time.Duration(delay) * time.Millisecond)
+			tm := time.NewTimer(time.Duration(delay) * timeUnit)
 			select {
 			case <-dq.notify:
 				tm.Stop()

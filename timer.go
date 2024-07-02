@@ -14,6 +14,8 @@ const (
 	DefaultTickMs = 1
 	// DefaultWheelSize default wheel size.
 	DefaultWheelSize = 1024
+	// DefaultTimeUnit default time unit is milliseconds.
+	DefaultTimeUnit = time.Millisecond
 )
 
 var (
@@ -158,7 +160,7 @@ func (t *Timer) Start() {
 		t.quit = quit
 		go func() {
 			for {
-				spoke, exit := t.delayQueue.Take(quit)
+				spoke, exit := t.delayQueue.Take(DefaultTimeUnit, quit)
 				if exit {
 					break
 				}
@@ -185,7 +187,7 @@ func (t *Timer) addToDelayQueue(spoke *Spoke) {
 
 func (t *Timer) addTask(task *Task) {
 	if !t.wheel.add(task) {
-		if !task.Cancelled() {
+		if !task.Cancelled() { // already expired or cancelled
 			t.goPool.Go(task.Run)
 		}
 	}

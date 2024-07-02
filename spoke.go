@@ -105,8 +105,8 @@ func (sp *Spoke) SetExpiration(expirationMs int64) bool {
 // Get the spoke's expiration time
 func (sp *Spoke) GetExpiration() int64 { return sp.expiration.Load() }
 
-// DelayMs implements delayqueue.Delayed.
-func (sp *Spoke) DelayMs() int64 {
+// Delay implements delayqueue.Delayed.
+func (sp *Spoke) Delay() int64 {
 	delay := sp.GetExpiration() - time.Now().UnixMilli()
 	if delay < 0 {
 		return 0

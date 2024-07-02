@@ -11,15 +11,15 @@ import (
 func Test_Spoke(t *testing.T) {
 	spoke1 := NewSpoke(&atomic.Int64{})
 	require.Equal(t, int64(-1), spoke1.GetExpiration())
-	require.Zero(t, spoke1.DelayMs())
+	require.Zero(t, spoke1.Delay())
 	spoke2 := NewSpoke(&atomic.Int64{})
 	require.Equal(t, int64(-1), spoke2.GetExpiration())
-	require.Zero(t, spoke2.DelayMs())
+	require.Zero(t, spoke2.Delay())
 
 	now := time.Now()
 	require.True(t, spoke1.SetExpiration(now.Add(time.Minute*2).UnixMilli()))
 	require.True(t, spoke2.SetExpiration(now.Add(time.Minute).UnixMilli()))
-	require.NotZero(t, spoke1.DelayMs())
+	require.NotZero(t, spoke1.Delay())
 
 	require.Equal(t, 0, compareSpoke(spoke1, spoke1))
 	require.Equal(t, 1, compareSpoke(spoke1, spoke2))

@@ -9,6 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testTimeUnit = time.Millisecond
+
 type delay struct {
 	name  string
 	value int64
@@ -18,7 +20,7 @@ func (d delay) Value() int64 {
 	return atomic.LoadInt64(&d.value)
 }
 
-func (d delay) DelayMs() int64 {
+func (d delay) Delay() int64 {
 	return atomic.LoadInt64(&d.value) - time.Now().UnixMilli()
 }
 
@@ -41,15 +43,15 @@ func Test_DelayQueue(t *testing.T) {
 	d2 := &delay{"d2", time.Now().UnixMilli() + 200}
 	dq.Add(d1)
 	dq.Add(d2)
-	v1, exit := dq.Take(nil)
+	v1, exit := dq.Take(testTimeUnit, nil)
 	require.False(t, exit)
 	assert.Equal(t, "d1", v1.name)
-	assert.LessOrEqual(t, v1.DelayMs(), int64(0))
+	assert.LessOrEqual(t, v1.Delay(), int64(0))
 
-	v2, exit := dq.Take(nil)
+	v2, exit := dq.Take(testTimeUnit, nil)
 	require.False(t, exit)
 	assert.Equal(t, "d2", v2.name)
-	assert.LessOrEqual(t, v2.DelayMs(), int64(0))
+	assert.LessOrEqual(t, v2.Delay(), int64(0))
 }
 
 func Test_DelayQueue_Empty_Begin(t *testing.T) {
@@ -71,20 +73,20 @@ func Test_DelayQueue_Empty_Begin(t *testing.T) {
 		dq.Add(d3)
 	}()
 
-	v1, exit := dq.Take(nil)
+	v1, exit := dq.Take(testTimeUnit, nil)
 	require.False(t, exit)
 	assert.Equal(t, "d3", v1.name)
-	assert.LessOrEqual(t, v1.DelayMs(), int64(0))
+	assert.LessOrEqual(t, v1.Delay(), int64(0))
 
-	v3, exit := dq.Take(nil)
+	v3, exit := dq.Take(testTimeUnit, nil)
 	require.False(t, exit)
 	assert.Equal(t, "d1", v3.name)
-	assert.LessOrEqual(t, v3.DelayMs(), int64(0))
+	assert.LessOrEqual(t, v3.Delay(), int64(0))
 
-	v2, exit := dq.Take(nil)
+	v2, exit := dq.Take(testTimeUnit, nil)
 	require.False(t, exit)
 	assert.Equal(t, "d2", v2.name)
-	assert.LessOrEqual(t, v2.DelayMs(), int64(0))
+	assert.LessOrEqual(t, v2.Delay(), int64(0))
 }
 
 func Test_DelayQueue_Quit(t *testing.T) {
@@ -97,19 +99,19 @@ func Test_DelayQueue_Quit(t *testing.T) {
 
 	quitChan := make(chan struct{})
 	close(quitChan)
-	vxx, exit := dq.Take(quitChan)
+	vxx, exit := dq.Take(testTimeUnit, quitChan)
 	require.True(t, exit)
 	assert.Nil(t, vxx)
 
-	v1, exit := dq.Take(nil)
+	v1, exit := dq.Take(testTimeUnit, nil)
 	require.False(t, exit)
 	assert.Equal(t, "d1", v1.name)
-	assert.LessOrEqual(t, v1.DelayMs(), int64(0))
+	assert.LessOrEqual(t, v1.Delay(), int64(0))
 
-	v2, exit := dq.Take(nil)
+	v2, exit := dq.Take(testTimeUnit, nil)
 	require.False(t, exit)
 	assert.Equal(t, "d2", v2.name)
-	assert.LessOrEqual(t, v2.DelayMs(), int64(0))
+	assert.LessOrEqual(t, v2.Delay(), int64(0))
 }
 
 func Test_DelayQueue_Quit_Empty_Begin(t *testing.T) {
@@ -125,17 +127,17 @@ func Test_DelayQueue_Quit_Empty_Begin(t *testing.T) {
 
 	quitChan := make(chan struct{})
 	close(quitChan)
-	vxx, exit := dq.Take(quitChan)
+	vxx, exit := dq.Take(testTimeUnit, quitChan)
 	require.True(t, exit)
 	assert.Nil(t, vxx)
 
-	v1, exit := dq.Take(nil)
+	v1, exit := dq.Take(testTimeUnit, nil)
 	require.False(t, exit)
 	assert.Equal(t, "d1", v1.name)
-	assert.LessOrEqual(t, v1.DelayMs(), int64(0))
+	assert.LessOrEqual(t, v1.Delay(), int64(0))
 
-	v2, exit := dq.Take(nil)
+	v2, exit := dq.Take(testTimeUnit, nil)
 	require.False(t, exit)
 	assert.Equal(t, "d2", v2.name)
-	assert.LessOrEqual(t, v2.DelayMs(), int64(0))
+	assert.LessOrEqual(t, v2.Delay(), int64(0))
 }
