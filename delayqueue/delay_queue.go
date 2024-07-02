@@ -14,21 +14,32 @@ type Delayed interface {
 	comparable
 }
 
+// DelayQueue delay queue
 type DelayQueue[T Delayed] struct {
 	notify        chan struct{}           // notify channel
+	timeUnit      time.Duration           // time unit. default 1 millisecond.
 	phantom       T                       // phantom data for T, not any used, just placeholder for Take function, when exit.
 	mu            sync.Mutex              // protects following fields
 	priorityQueue *queue.PriorityQueue[T] // priority queue
 	waiting       atomic.Bool             // waiting or not.
 }
 
+// NewDelayQueue new delay queue instance.
 func NewDelayQueue[T Delayed](cmp comparator.Comparable[T]) *DelayQueue[T] {
 	return &DelayQueue[T]{
-		priorityQueue: queue.NewPriorityQueueWith(false, cmp),
 		notify:        make(chan struct{}, 1),
+		timeUnit:      time.Millisecond,
+		priorityQueue: queue.NewPriorityQueueWith(false, cmp),
 	}
 }
 
+// TimeUnit set time unit.
+func (dq *DelayQueue[T]) TimeUnit(timeUnit time.Duration) *DelayQueue[T] {
+	dq.timeUnit = timeUnit
+	return dq
+}
+
+// Add to queue
 func (dq *DelayQueue[T]) Add(val T) {
 	dq.mu.Lock()
 	dq.priorityQueue.Push(val)
@@ -43,7 +54,8 @@ func (dq *DelayQueue[T]) Add(val T) {
 	}
 }
 
-func (dq *DelayQueue[T]) Take(timeUnit time.Duration, quit <-chan struct{}) (val T, exit bool) {
+// Take from queue.
+func (dq *DelayQueue[T]) Take(quit <-chan struct{}) (val T, exit bool) {
 	for {
 		dq.mu.Lock()
 		head, exist := dq.priorityQueue.Peek()
@@ -66,7 +78,7 @@ func (dq *DelayQueue[T]) Take(timeUnit time.Duration, quit <-chan struct{}) (val
 			}
 			dq.waiting.Store(true)
 			dq.mu.Unlock()
-			tm := time.NewTimer(time.Duration(delay) * timeUnit)
+			tm := time.NewTimer(time.Duration(delay) * dq.timeUnit)
 			select {
 			case <-dq.notify:
 				tm.Stop()

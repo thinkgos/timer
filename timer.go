@@ -160,7 +160,7 @@ func (t *Timer) Start() {
 		t.quit = quit
 		go func() {
 			for {
-				spoke, exit := t.delayQueue.Take(DefaultTimeUnit, quit)
+				spoke, exit := t.delayQueue.Take(quit)
 				if exit {
 					break
 				}

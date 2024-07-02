@@ -43,12 +43,12 @@ func Test_DelayQueue(t *testing.T) {
 	d2 := &delay{"d2", time.Now().UnixMilli() + 200}
 	dq.Add(d1)
 	dq.Add(d2)
-	v1, exit := dq.Take(testTimeUnit, nil)
+	v1, exit := dq.Take(nil)
 	require.False(t, exit)
 	assert.Equal(t, "d1", v1.name)
 	assert.LessOrEqual(t, v1.Delay(), int64(0))
 
-	v2, exit := dq.Take(testTimeUnit, nil)
+	v2, exit := dq.Take(nil)
 	require.False(t, exit)
 	assert.Equal(t, "d2", v2.name)
 	assert.LessOrEqual(t, v2.Delay(), int64(0))
@@ -73,17 +73,17 @@ func Test_DelayQueue_Empty_Begin(t *testing.T) {
 		dq.Add(d3)
 	}()
 
-	v1, exit := dq.Take(testTimeUnit, nil)
+	v1, exit := dq.Take(nil)
 	require.False(t, exit)
 	assert.Equal(t, "d3", v1.name)
 	assert.LessOrEqual(t, v1.Delay(), int64(0))
 
-	v3, exit := dq.Take(testTimeUnit, nil)
+	v3, exit := dq.Take(nil)
 	require.False(t, exit)
 	assert.Equal(t, "d1", v3.name)
 	assert.LessOrEqual(t, v3.Delay(), int64(0))
 
-	v2, exit := dq.Take(testTimeUnit, nil)
+	v2, exit := dq.Take(nil)
 	require.False(t, exit)
 	assert.Equal(t, "d2", v2.name)
 	assert.LessOrEqual(t, v2.Delay(), int64(0))
@@ -99,23 +99,23 @@ func Test_DelayQueue_Quit(t *testing.T) {
 
 	quitChan := make(chan struct{})
 	close(quitChan)
-	vxx, exit := dq.Take(testTimeUnit, quitChan)
+	vxx, exit := dq.Take(quitChan)
 	require.True(t, exit)
 	assert.Nil(t, vxx)
 
-	v1, exit := dq.Take(testTimeUnit, nil)
+	v1, exit := dq.Take(nil)
 	require.False(t, exit)
 	assert.Equal(t, "d1", v1.name)
 	assert.LessOrEqual(t, v1.Delay(), int64(0))
 
-	v2, exit := dq.Take(testTimeUnit, nil)
+	v2, exit := dq.Take(nil)
 	require.False(t, exit)
 	assert.Equal(t, "d2", v2.name)
 	assert.LessOrEqual(t, v2.Delay(), int64(0))
 }
 
 func Test_DelayQueue_Quit_Empty_Begin(t *testing.T) {
-	dq := NewDelayQueue[*delay](compareDelay)
+	dq := NewDelayQueue[*delay](compareDelay).TimeUnit(time.Millisecond)
 
 	go func() {
 		time.Sleep(time.Millisecond * 50)
@@ -127,16 +127,16 @@ func Test_DelayQueue_Quit_Empty_Begin(t *testing.T) {
 
 	quitChan := make(chan struct{})
 	close(quitChan)
-	vxx, exit := dq.Take(testTimeUnit, quitChan)
+	vxx, exit := dq.Take(quitChan)
 	require.True(t, exit)
 	assert.Nil(t, vxx)
 
-	v1, exit := dq.Take(testTimeUnit, nil)
+	v1, exit := dq.Take(nil)
 	require.False(t, exit)
 	assert.Equal(t, "d1", v1.name)
 	assert.LessOrEqual(t, v1.Delay(), int64(0))
 
-	v2, exit := dq.Take(testTimeUnit, nil)
+	v2, exit := dq.Take(nil)
 	require.False(t, exit)
 	assert.Equal(t, "d2", v2.name)
 	assert.LessOrEqual(t, v2.Delay(), int64(0))
