@@ -1,6 +1,6 @@
 # timer
 
-Go implementation of Kafka's Hierarchical Timing Wheels, Support millions of tasks. `timed` is a global `timer` instance, that tick is 1ms. wheel size is 1024, use [ants](https://github.com/panjf2000/ants) goroutine pool.
+Go implementation of Kafka's Hierarchical Timing Wheels.
 
 [![Go.Dev reference](https://img.shields.io/badge/go.dev-reference-blue?logo=go&logoColor=white)](https://pkg.go.dev/github.com/thinkgos/timer?tab=doc)
 [![codecov](https://codecov.io/gh/thinkgos/timer/branch/main/graph/badge.svg)](https://codecov.io/gh/thinkgos/timer)
@@ -8,6 +8,14 @@ Go implementation of Kafka's Hierarchical Timing Wheels, Support millions of tas
 [![Go Report Card](https://goreportcard.com/badge/github.com/thinkgos/timer)](https://goreportcard.com/report/github.com/thinkgos/timer)
 [![Licence](https://img.shields.io/github/license/thinkgos/timer)](https://raw.githubusercontent.com/thinkgos/timer/main/LICENSE)
 [![Tag](https://img.shields.io/github/v/tag/thinkgos/timer)](https://github.com/thinkgos/timer/tags)
+
+## Feature
+
+- Unlimited hierarchical wheel.
+- `insert`, `delete`, `scan` task almost O(1).
+- Different from the time wheel of Linux, it has no maximum time limit.
+- Support millions of tasks.
+- `timed` is a global `timer` instance, that tick is 1ms. wheel size is 1024, use [ants](https://github.com/panjf2000/ants) goroutine pool.
 
 ## Usage
 
