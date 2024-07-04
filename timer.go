@@ -13,7 +13,7 @@ const (
 	// DefaultTickMs default tick milliseconds.
 	DefaultTickMs = 1
 	// DefaultWheelSize default wheel size.
-	DefaultWheelSize = 1024
+	DefaultWheelSize = 256
 	// DefaultTimeUnit default time unit is milliseconds.
 	DefaultTimeUnit = time.Millisecond
 )
@@ -82,7 +82,7 @@ type Timer struct {
 	closed      bool                           // true if closed.
 }
 
-// NewTimer new timer instance. tick is 1 milliseconds, wheel size is 1024.
+// NewTimer new timer instance. tick is 1 milliseconds, wheel size is 256.
 func NewTimer(opts ...Option) *Timer {
 	t := &Timer{
 		tickMs:      DefaultTickMs,

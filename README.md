@@ -15,7 +15,7 @@ Go implementation of Kafka's Hierarchical Timing Wheels.
 - `insert`, `delete`, `scan` task almost O(1).
 - Different from the time wheel of Linux, it has no maximum time limit.
 - Support millions of tasks.
-- `timed` is a global `timer` instance, that tick is 1ms. wheel size is 1024, use [ants](https://github.com/panjf2000/ants) goroutine pool.
+- `timed` is a global `timer` instance, that tick is 1ms. wheel size is 256, use [ants](https://github.com/panjf2000/ants) goroutine pool.
 
 ## Usage
 

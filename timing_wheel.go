@@ -5,13 +5,13 @@ import (
 )
 
 type TimingWheel struct {
-	timer         *Timer
+	timer         *Timer       // belongs to timer
 	tickMs        int64        // 时间轮的基本时间跨度, 单位ms
 	interval      int64        // 时间轮的总体时间跨度, tickMs * wheelSize
-	currentTime   int64        // 时间轮的表盘指针, 表示当前时间轮所处的时间, 绝对时间, 单位ms.
 	spokes        []*Spoke     // 时间轮的轮辐条
+	rw            sync.RWMutex // protects following fields
+	currentTime   int64        // 时间轮的表盘指针, 表示当前时间轮所处的时间, 绝对时间, 单位ms.
 	overflowWheel *TimingWheel // 更高层级时间轮
-	rw            sync.RWMutex
 }
 
 func newTimingWheel(t *Timer, tickMs int64, startMs int64) *TimingWheel {
@@ -59,9 +59,9 @@ func (tw *TimingWheel) add(task *Task) bool {
 		}
 		return true
 	default: // not on the current wheel, add a high-level time wheel.
-		needInit := tw.overflowWheel == nil
+		needNewOverflowWheel := tw.overflowWheel == nil
 		tw.rw.RUnlock()
-		if needInit {
+		if needNewOverflowWheel {
 			tw.rw.Lock()
 			if tw.overflowWheel == nil {
 				tw.overflowWheel = newTimingWheel(tw.timer, tw.interval, tw.currentTime)
