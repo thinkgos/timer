@@ -27,13 +27,13 @@ func Test_Spoke(t *testing.T) {
 }
 
 func Test_Spoke_Task(t *testing.T) {
-	tasks := map[*Task]struct{}{
-		NewTask(101 * time.Millisecond): {},
-		NewTask(102 * time.Millisecond): {},
-		NewTask(103 * time.Millisecond): {},
-		NewTask(105 * time.Millisecond): {},
+	tasks := map[*taskEntry]struct{}{
+		newTaskEntry(NewTask(101 * time.Millisecond)): {},
+		newTaskEntry(NewTask(102 * time.Millisecond)): {},
+		newTaskEntry(NewTask(103 * time.Millisecond)): {},
+		newTaskEntry(NewTask(105 * time.Millisecond)): {},
 	}
-	task1 := NewTask(104 * time.Millisecond)
+	task1 := newTaskEntry(NewTask(104 * time.Millisecond))
 
 	taskCounter := &atomic.Int64{}
 	spoke := NewSpoke(taskCounter)
@@ -45,7 +45,7 @@ func Test_Spoke_Task(t *testing.T) {
 	spoke.Remove(task1)
 	require.Equal(t, int64(4), taskCounter.Load())
 
-	spoke.Flush(func(task *Task) {
+	spoke.Flush(func(task *taskEntry) {
 		_, ok := tasks[task]
 		require.True(t, ok)
 		delete(tasks, task)

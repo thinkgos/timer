@@ -30,8 +30,8 @@ func newTimingWheel(t *Timer, tickMs int64, startMs int64) *TimingWheel {
 
 // add 加到时间轮上
 // true:添加成功, false: 已取消或已过期
-func (tw *TimingWheel) add(task *Task) bool {
-	if task.Cancelled() { // already cancelled
+func (tw *TimingWheel) add(task *taskEntry) bool {
+	if task.cancelled() { // already cancelled
 		return false
 	}
 

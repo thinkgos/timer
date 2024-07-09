@@ -38,7 +38,7 @@ func main() {
 
 					// for test race
 					// if ii%0x03 == 0x00 {
-					// 	defaultPool.Go(func() {
+					// 	timed.Go(func() {
 					// 		task.Cancel()
 					// 	})
 					// }

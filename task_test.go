@@ -53,10 +53,7 @@ func Test_Task_RecoverPanic(t *testing.T) {
 	require.NotPanics(t, task.Run)
 }
 
-func Test_Task_Cancel(t *testing.T) {
+func Test_Task_Activated(t *testing.T) {
 	task := NewTask(100 * time.Millisecond)
-	require.False(t, task.Cancelled())
-
-	task.Cancel()
-	require.True(t, task.Cancelled())
+	require.False(t, task.Activated())
 }

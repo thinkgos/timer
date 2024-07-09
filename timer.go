@@ -140,7 +140,7 @@ func (t *Timer) AddTask(task *Task) error {
 	default:
 		t.rw.RLock()
 		defer t.rw.RUnlock()
-		t.addTask(task)
+		t.addTaskEntry(newTaskEntry(task))
 	}
 	return nil
 }
@@ -191,14 +191,14 @@ func (t *Timer) addToDelayQueue(spoke *Spoke) {
 	t.delayQueue.Add(spoke)
 }
 
-func (t *Timer) addTask(task *Task) {
-	if !t.wheel.add(task) {
-		if !task.Cancelled() { // already expired or cancelled
-			t.goPool.Go(task.Run)
+func (t *Timer) addTaskEntry(te *taskEntry) {
+	if !t.wheel.add(te) {
+		if !te.cancelled() { // already expired or cancelled
+			t.goPool.Go(te.task.Run)
 		}
 	}
 }
 
-func (t *Timer) reinsert(task *Task) {
-	t.addTask(task)
+func (t *Timer) reinsert(te *taskEntry) {
+	t.addTaskEntry(te)
 }

@@ -8,8 +8,8 @@ import (
 
 // Spoke a spoke of the wheel.
 type Spoke struct {
-	root        Task // sentinel list element, only &root, root.prev, and root.next are used
-	len         int  // current list length excluding (this) sentinel element
+	root        taskEntry // sentinel list element, only &root, root.prev, and root.next are used
+	len         int       // current list length excluding (this) sentinel element
 	taskCounter *atomic.Int64
 	expiration  atomic.Int64
 	mu          sync.Mutex
@@ -26,12 +26,12 @@ func NewSpoke(taskCounter *atomic.Int64) *Spoke {
 }
 
 // Add the timer task to this list
-func (sp *Spoke) Add(task *Task) {
+func (sp *Spoke) Add(task *taskEntry) {
 	for done := false; !done; {
 		// Remove the timer task if it is already in any other list
 		// We do this outside of the sync block below to avoid deadlocking.
 		// We may retry until task.list becomes null.
-		task.removeSelf()
+		task.remove()
 		if task.list.Load() == nil { // fast check.
 			sp.mu.Lock()
 			if task.list.Load() == nil { // double check but slow.
@@ -44,7 +44,7 @@ func (sp *Spoke) Add(task *Task) {
 }
 
 // Remove the specified timer task from this list
-func (sp *Spoke) Remove(task *Task) {
+func (sp *Spoke) Remove(task *taskEntry) {
 	sp.mu.Lock()
 	defer sp.mu.Unlock()
 	if task.list.Load() == sp {
@@ -52,7 +52,7 @@ func (sp *Spoke) Remove(task *Task) {
 	}
 }
 
-func (sp *Spoke) pushBack(task *Task) {
+func (sp *Spoke) pushBack(task *taskEntry) {
 	at := sp.root.prev
 
 	task.prev = at
@@ -64,7 +64,7 @@ func (sp *Spoke) pushBack(task *Task) {
 	sp.taskCounter.Add(1)
 }
 
-func (sp *Spoke) remove(task *Task) {
+func (sp *Spoke) remove(task *taskEntry) {
 	task.prev.next = task.next
 	task.next.prev = task.prev
 	task.next = nil // avoid memory leaks
@@ -75,7 +75,7 @@ func (sp *Spoke) remove(task *Task) {
 }
 
 // Front returns the first task of list l or nil if the list is empty.
-func (sp *Spoke) frontTask() *Task {
+func (sp *Spoke) frontTask() *taskEntry {
 	if sp.len == 0 {
 		return nil
 	}
@@ -83,13 +83,13 @@ func (sp *Spoke) frontTask() *Task {
 }
 
 // Flush all task entries and apply the supplied function to each of them
-func (sp *Spoke) Flush(f func(*Task)) {
-	var temp *Task
+func (sp *Spoke) Flush(f func(*taskEntry)) {
+	var temp *taskEntry
 
 	sp.mu.Lock()
 	defer sp.mu.Unlock()
 	for e := sp.frontTask(); e != nil; e = temp {
-		temp = e.nextTask()
+		temp = e.nextTaskEntry()
 		sp.remove(e)
 		f(e)
 	}
@@ -124,4 +124,52 @@ func compareSpoke(sp1, sp2 *Spoke) int {
 		return 1
 	}
 	return 0
+}
+
+// taskEntry 是双向链表的一个元素.
+type taskEntry struct {
+	// next and previous pointers in the doubly-linked list of elements.
+	// To simplify the implementation, internally a list l is implemented
+	// as a ring, such that &l.root is both the next element of the last
+	// list element (l.Back()) and the previous element of the first list
+	// element (l.Front()).
+	prev *taskEntry
+	next *taskEntry
+	list atomic.Pointer[Spoke] // 此元素所属的列表
+
+	expirationMs int64 // 到期时间, 绝对时间(初始化后不可变), 单位: ms
+	task         *Task
+}
+
+func newTaskEntry(task *Task) *taskEntry {
+	e := &taskEntry{
+		task:         task,
+		expirationMs: task.delayMs + time.Now().UnixMilli(),
+	}
+	task.setTaskEntry(e)
+	return e
+}
+
+// ExpirationMs expiration milliseconds.
+func (te *taskEntry) ExpirationMs() int64 { return te.expirationMs }
+
+// nextTask return the next task or nil.
+func (te *taskEntry) nextTaskEntry() *taskEntry {
+	if p, list := te.next, te.list.Load(); list != nil && p != &list.root {
+		return p
+	}
+	return nil
+}
+
+func (te *taskEntry) remove() {
+	// If remove is called when another thread is moving the entry from a task entry list to another,
+	// this may fail to remove the entry due to the change of value of list. Thus, we retry until the list becomes null.
+	// In a rare case, this thread sees null and exits the loop, but the other thread insert the entry to another list later.
+	for currentList := te.list.Load(); currentList != nil; currentList = te.list.Load() {
+		currentList.Remove(te)
+	}
+}
+
+func (te *taskEntry) cancelled() bool {
+	return te.task.getTaskEntry() != te
 }
