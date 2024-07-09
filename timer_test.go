@@ -65,17 +65,19 @@ func ExampleTimer() {
 	_, _ = tm.AfterFunc(100*time.Millisecond, func() {
 		fmt.Println(100)
 	})
+	canceledTaskThenAddAgain := NewTask(1100 * time.Millisecond).WithJobFunc(func() {
+		fmt.Println("canceled then add again")
+	})
+	_ = tm.AddTask(canceledTaskThenAddAgain)
+	canceledTaskThenAddAgain.Cancel()
 	_ = tm.AddTask(NewTask(1025 * time.Millisecond).WithJobFunc(func() {
 		fmt.Println(200)
 	}))
-	canceledTaskAfterAdd := NewTask(300 * time.Millisecond).WithJobFunc(func() {
-		fmt.Println("canceled after add")
-	})
-	_ = tm.AddTask(canceledTaskAfterAdd)
-	canceledTaskAfterAdd.Cancel()
+	_ = tm.AddTask(canceledTaskThenAddAgain)
 	time.Sleep(time.Second + time.Millisecond*200)
 	tm.Stop()
 	// Output:
 	// 100
 	// 200
+	// canceled then add again
 }
