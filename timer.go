@@ -75,9 +75,9 @@ type Timer struct {
 	wheelMask   int                            // 轮的掩码
 	taskCounter atomic.Int64                   // 任务总数
 	delayQueue  *delayqueue.DelayQueue[*Spoke] // 延迟队列
-	wheel       *TimingWheel                   // 时间轮
 	goPool      GoPool                         // 协程池
-	mu          sync.Mutex                     // protects following fields
+	rw          sync.RWMutex                   // protects following fields.
+	wheel       *TimingWheel                   // timing wheel, concurrent add task(read-lock) and advance clock only one(write-lock).
 	quit        chan struct{}                  // of chan struct{}, created when first start.
 	closed      bool                           // true if closed.
 }
@@ -138,6 +138,8 @@ func (t *Timer) AddTask(task *Task) error {
 	case <-t.quit:
 		return ErrClosed
 	default:
+		t.rw.RLock()
+		defer t.rw.RUnlock()
 		t.addTask(task)
 	}
 	return nil
@@ -145,15 +147,15 @@ func (t *Timer) AddTask(task *Task) error {
 
 // Started have started or not.
 func (t *Timer) Started() bool {
-	t.mu.Lock()
-	defer t.mu.Unlock()
+	t.rw.RLock()
+	defer t.rw.RUnlock()
 	return !t.closed
 }
 
 // Start the timer.
 func (t *Timer) Start() {
-	t.mu.Lock()
-	defer t.mu.Unlock()
+	t.rw.Lock()
+	defer t.rw.Unlock()
 	if t.closed {
 		quit := make(chan struct{})
 		t.closed = false
@@ -164,8 +166,12 @@ func (t *Timer) Start() {
 				if exit {
 					break
 				}
-				t.wheel.advanceClock(spoke.GetExpiration())
-				spoke.Flush(t.reinsert)
+				t.rw.Lock()
+				for exist := true; exist; spoke, exist = t.delayQueue.Poll() {
+					t.wheel.advanceClock(spoke.GetExpiration())
+					spoke.Flush(t.reinsert)
+				}
+				t.rw.Unlock()
 			}
 		}()
 	}
@@ -173,11 +179,11 @@ func (t *Timer) Start() {
 
 // Stop the timer.
 func (t *Timer) Stop() {
-	t.mu.Lock()
-	defer t.mu.Unlock()
+	t.rw.Lock()
+	defer t.rw.Unlock()
 	if !t.closed {
-		t.closed = true
 		close(t.quit)
+		t.closed = true
 	}
 }
 

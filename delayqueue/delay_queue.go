@@ -91,3 +91,15 @@ func (dq *DelayQueue[T]) Take(quit <-chan struct{}) (val T, exit bool) {
 		}
 	}
 }
+
+func (dq *DelayQueue[T]) Poll() (val T, exist bool) {
+	dq.mu.Lock()
+	defer dq.mu.Unlock()
+	head, exist := dq.priorityQueue.Peek()
+	if exist && head.Delay() <= 0 {
+		dq.priorityQueue.Pop()
+		return head, true
+	} else {
+		return dq.phantom, false
+	}
+}
