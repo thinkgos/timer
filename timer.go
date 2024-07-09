@@ -141,8 +141,8 @@ func (t *Timer) AddTask(task *Task) error {
 		t.rw.RLock()
 		defer t.rw.RUnlock()
 		t.addTaskEntry(newTaskEntry(task))
+		return nil
 	}
-	return nil
 }
 
 // Started have started or not.
