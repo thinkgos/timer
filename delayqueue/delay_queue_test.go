@@ -9,8 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const testTimeUnit = time.Millisecond
-
 type delay struct {
 	name  string
 	value int64
@@ -37,7 +35,7 @@ func compareDelay(v1 *delay, v2 *delay) int {
 }
 
 func Test_DelayQueue(t *testing.T) {
-	dq := NewDelayQueue[*delay](compareDelay)
+	dq := NewDelayQueue(compareDelay)
 
 	d1 := &delay{"d1", time.Now().UnixMilli() + 100}
 	d2 := &delay{"d2", time.Now().UnixMilli() + 200}
@@ -55,7 +53,7 @@ func Test_DelayQueue(t *testing.T) {
 }
 
 func Test_DelayQueue_Empty_Begin(t *testing.T) {
-	dq := NewDelayQueue[*delay](compareDelay)
+	dq := NewDelayQueue(compareDelay)
 
 	go func() {
 		time.Sleep(time.Millisecond * 20)
@@ -90,7 +88,7 @@ func Test_DelayQueue_Empty_Begin(t *testing.T) {
 }
 
 func Test_DelayQueue_Quit(t *testing.T) {
-	dq := NewDelayQueue[*delay](compareDelay)
+	dq := NewDelayQueue(compareDelay)
 
 	d1 := &delay{"d1", time.Now().UnixMilli() + 100}
 	d2 := &delay{"d2", time.Now().UnixMilli() + 200}
@@ -115,7 +113,7 @@ func Test_DelayQueue_Quit(t *testing.T) {
 }
 
 func Test_DelayQueue_Quit_Empty_Begin(t *testing.T) {
-	dq := NewDelayQueue[*delay](compareDelay).TimeUnit(time.Millisecond)
+	dq := NewDelayQueue(compareDelay).TimeUnit(time.Millisecond)
 
 	go func() {
 		time.Sleep(time.Millisecond * 50)
@@ -140,4 +138,22 @@ func Test_DelayQueue_Quit_Empty_Begin(t *testing.T) {
 	require.False(t, exit)
 	assert.Equal(t, "d2", v2.name)
 	assert.LessOrEqual(t, v2.Delay(), int64(0))
+}
+
+func Test_DelayQueue_Poll(t *testing.T) {
+	dq := NewDelayQueue(compareDelay)
+
+	d1 := &delay{"d1", time.Now().UnixMilli()}
+	d2 := &delay{"d2", time.Now().UnixMilli() + 200}
+	dq.Add(d1)
+	dq.Add(d2)
+
+	v1, exist := dq.Poll()
+	require.True(t, exist)
+	assert.Equal(t, "d1", v1.name)
+	assert.LessOrEqual(t, v1.Delay(), int64(0))
+
+	v2, exist := dq.Poll()
+	require.False(t, exist)
+	assert.Nil(t, v2)
 }
