@@ -82,13 +82,13 @@ func (sp *Spoke) Flush(f func(*taskEntry)) {
 	sp.SetExpiration(-1)
 }
 
-// Set the spoke's expiration time
+// SetExpiration the spoke's expiration time
 // Returns true if the expiration time is changed
 func (sp *Spoke) SetExpiration(expirationMs int64) bool {
 	return sp.expiration.Swap(expirationMs) != expirationMs
 }
 
-// Get the spoke's expiration time
+// GetExpiration the spoke's expiration time
 func (sp *Spoke) GetExpiration() int64 { return sp.expiration.Load() }
 
 // Delay implements delayqueue.Delayed.
@@ -100,8 +100,8 @@ func (sp *Spoke) Delay() int64 {
 	return delay
 }
 
-// compareSpoke compare two `Spoke`.
-func compareSpoke(sp1, sp2 *Spoke) int {
+// CompareSpoke compare two `Spoke` with expiration.
+func CompareSpoke(sp1, sp2 *Spoke) int {
 	v1, v2 := sp1.GetExpiration(), sp2.GetExpiration()
 	if v1 < v2 {
 		return -1

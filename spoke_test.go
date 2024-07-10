@@ -21,9 +21,9 @@ func Test_Spoke(t *testing.T) {
 	require.True(t, spoke2.SetExpiration(now.Add(time.Minute).UnixMilli()))
 	require.NotZero(t, spoke1.Delay())
 
-	require.Equal(t, 0, compareSpoke(spoke1, spoke1))
-	require.Equal(t, 1, compareSpoke(spoke1, spoke2))
-	require.Equal(t, -1, compareSpoke(spoke2, spoke1))
+	require.Equal(t, 0, CompareSpoke(spoke1, spoke1))
+	require.Equal(t, 1, CompareSpoke(spoke1, spoke2))
+	require.Equal(t, -1, CompareSpoke(spoke2, spoke1))
 }
 
 func Test_Spoke_Task(t *testing.T) {

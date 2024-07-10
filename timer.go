@@ -82,14 +82,14 @@ type Timer struct {
 	closed      bool                           // true if closed.
 }
 
-// NewTimer new timer instance. tick is 1 milliseconds, wheel size is 512.
+// NewTimer new timer instance. default tick is 1 milliseconds, wheel size is 512.
 func NewTimer(opts ...Option) *Timer {
 	t := &Timer{
 		tickMs:      DefaultTickMs,
 		wheelSize:   DefaultWheelSize,
 		wheelMask:   DefaultWheelSize - 1,
 		taskCounter: atomic.Int64{},
-		delayQueue:  delayqueue.NewDelayQueue(compareSpoke),
+		delayQueue:  delayqueue.NewDelayQueue(CompareSpoke),
 		goPool:      goroutinePool,
 		quit:        closedchan,
 		closed:      true,
@@ -167,24 +167,12 @@ func (t *Timer) Start() {
 					break
 				}
 				for exist := true; exist; spoke, exist = t.delayQueue.Poll() {
-					t.advanceClock(spoke.GetExpiration())
+					t.advanceWheelClock(spoke.GetExpiration())
 					t.flushSpoke(spoke)
 				}
 			}
 		}()
 	}
-}
-
-func (t *Timer) advanceClock(expiration int64) {
-	t.rw.Lock()
-	defer t.rw.Unlock()
-	t.wheel.advanceClock(expiration)
-}
-
-func (t *Timer) flushSpoke(spoke *Spoke) {
-	t.rw.RLock()
-	defer t.rw.RUnlock()
-	spoke.Flush(t.reinsert)
 }
 
 // Stop the timer.
@@ -197,13 +185,26 @@ func (t *Timer) Stop() {
 	}
 }
 
-func (t *Timer) addToDelayQueue(spoke *Spoke) {
+func (t *Timer) advanceWheelClock(expiration int64) {
+	t.rw.Lock()
+	defer t.rw.Unlock()
+	t.wheel.advanceClock(expiration)
+}
+
+func (t *Timer) flushSpoke(spoke *Spoke) {
+	t.rw.RLock()
+	defer t.rw.RUnlock()
+	spoke.Flush(t.reinsert)
+}
+
+func (t *Timer) addSpokeToDelayQueue(spoke *Spoke) {
 	t.delayQueue.Add(spoke)
 }
 
 func (t *Timer) addTaskEntry(te *taskEntry) {
 	if !t.wheel.add(te) {
-		if !te.cancelled() { // already expired or cancelled
+		// already expired or cancelled
+		if !te.cancelled() {
 			t.goPool.Go(te.task.Run)
 		}
 	}
