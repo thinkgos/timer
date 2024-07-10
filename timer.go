@@ -134,15 +134,13 @@ func (t *Timer) AfterFunc(d time.Duration, f func()) (*Task, error) {
 
 // AddTask adds a task to the timer.
 func (t *Timer) AddTask(task *Task) error {
-	select {
-	case <-t.quit:
+	t.rw.RLock()
+	defer t.rw.RUnlock()
+	if t.closed {
 		return ErrClosed
-	default:
-		t.rw.RLock()
-		defer t.rw.RUnlock()
-		t.addTaskEntry(newTaskEntry(task))
-		return nil
 	}
+	t.addTaskEntry(newTaskEntry(task))
+	return nil
 }
 
 // Started have started or not.
