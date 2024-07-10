@@ -166,15 +166,25 @@ func (t *Timer) Start() {
 				if exit {
 					break
 				}
-				t.rw.Lock()
 				for exist := true; exist; spoke, exist = t.delayQueue.Poll() {
-					t.wheel.advanceClock(spoke.GetExpiration())
-					spoke.Flush(t.reinsert)
+					t.advanceClock(spoke.GetExpiration())
+					t.flushSpoke(spoke)
 				}
-				t.rw.Unlock()
 			}
 		}()
 	}
+}
+
+func (t *Timer) advanceClock(expiration int64) {
+	t.rw.Lock()
+	defer t.rw.Unlock()
+	t.wheel.advanceClock(expiration)
+}
+
+func (t *Timer) flushSpoke(spoke *Spoke) {
+	t.rw.RLock()
+	defer t.rw.RUnlock()
+	spoke.Flush(t.reinsert)
 }
 
 // Stop the timer.
