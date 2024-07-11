@@ -42,7 +42,7 @@ func NewTaskFunc(d time.Duration, f func()) *Task {
 	return NewTask(d).WithJobFunc(f)
 }
 
-// NewTask new task with delay duration and job, the accuracy is milliseconds.
+// NewTaskJob new task with delay duration and job, the accuracy is milliseconds.
 func NewTaskJob(d time.Duration, job Job) *Task {
 	return NewTask(d).WithJob(job)
 }

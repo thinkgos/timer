@@ -9,9 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	wantJobValue int64 = 6666
-)
+const wantJobValue int64 = 6666
 
 type testJob struct {
 	val atomic.Int64

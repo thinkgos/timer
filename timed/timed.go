@@ -14,8 +14,12 @@ func init() {
 	tim.Start()
 }
 
-// Task alias timer.Task
-type Task = timer.Task
+// alias
+type (
+	Task    = timer.Task
+	Job     = timer.Job
+	JobFunc = timer.JobFunc
+)
 
 // TickMs Basic time tick milliseconds.
 func TickMs() int64 { return tim.TickMs() }
@@ -46,6 +50,9 @@ func NewTask(d time.Duration) *Task { return timer.NewTask(d) }
 
 // NewTaskFunc new task with delay duration and function job, the accuracy is milliseconds.
 func NewTaskFunc(d time.Duration, f func()) *Task { return timer.NewTaskFunc(d, f) }
+
+// NewTaskJob new task with delay duration and job, the accuracy is milliseconds.
+func NewTaskJob(d time.Duration, j Job) *Task { return timer.NewTaskJob(d, j) }
 
 type wrapperAnts struct{}
 
