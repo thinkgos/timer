@@ -18,18 +18,11 @@ const (
 	DefaultTimeUnit = time.Millisecond
 )
 
-var (
-	// ErrClosed is returned when the timer is closed.
-	ErrClosed = errors.New("timer: use of closed timer")
-	// closedchan is a reusable closed channel.
-	closedchan = make(chan struct{})
-	// goroutinePool is a reusable go pool.
-	goroutinePool = goroutine{}
-)
+// ErrClosed is returned when the timer is closed.
+var ErrClosed = errors.New("timer: use of closed timer")
 
-func init() {
-	close(closedchan)
-}
+// goroutinePool is a reusable go pool.
+var goroutinePool = goroutine{}
 
 // GoPool goroutine pool.
 type GoPool interface {
@@ -76,6 +69,7 @@ type Timer struct {
 	taskCounter atomic.Int64                   // 任务总数
 	delayQueue  *delayqueue.DelayQueue[*Spoke] // 延迟队列
 	goPool      GoPool                         // 协程池
+	waitGroup   sync.WaitGroup                 // ensure the goroutine has finished.
 	rw          sync.RWMutex                   // protects following fields.
 	wheel       *TimingWheel                   // timing wheel, concurrent add task(read-lock) and advance clock only one(write-lock).
 	quit        chan struct{}                  // of chan struct{}, created when first start.
@@ -91,7 +85,7 @@ func NewTimer(opts ...Option) *Timer {
 		taskCounter: atomic.Int64{},
 		delayQueue:  delayqueue.NewDelayQueue(CompareSpoke),
 		goPool:      goroutinePool,
-		quit:        closedchan,
+		quit:        nil,
 		closed:      true,
 	}
 	for _, opt := range opts {
@@ -155,12 +149,13 @@ func (t *Timer) Start() {
 	t.rw.Lock()
 	defer t.rw.Unlock()
 	if t.closed {
-		quit := make(chan struct{})
 		t.closed = false
-		t.quit = quit
+		t.quit = make(chan struct{})
+		t.waitGroup.Add(1)
 		go func() {
+			defer t.waitGroup.Done()
 			for {
-				spoke, exit := t.delayQueue.Take(quit)
+				spoke, exit := t.delayQueue.Take(t.quit)
 				if exit {
 					break
 				}
@@ -173,12 +168,13 @@ func (t *Timer) Start() {
 	}
 }
 
-// Stop the timer.
+// Stop the timer, graceful shutdown waiting the goroutine until it's stopped.
 func (t *Timer) Stop() {
 	t.rw.Lock()
 	defer t.rw.Unlock()
 	if !t.closed {
 		close(t.quit)
+		t.waitGroup.Wait() // Ensure the goroutine has finished
 		t.closed = true
 	}
 }
