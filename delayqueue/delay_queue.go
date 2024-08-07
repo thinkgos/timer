@@ -18,7 +18,6 @@ type Delayed interface {
 type DelayQueue[T Delayed] struct {
 	notify        chan struct{}           // notify channel
 	timeUnit      time.Duration           // time unit. default 1 millisecond.
-	phantom       T                       // phantom data for T, not any used, just placeholder for Take function, when exit.
 	mu            sync.Mutex              // protects following fields
 	priorityQueue *queue.PriorityQueue[T] // priority queue
 	waiting       atomic.Bool             // waiting or not.
@@ -56,6 +55,8 @@ func (dq *DelayQueue[T]) Add(val T) {
 
 // Take from queue.
 func (dq *DelayQueue[T]) Take(quit <-chan struct{}) (val T, exit bool) {
+	var phantom T
+
 	for {
 		dq.mu.Lock()
 		head, exist := dq.priorityQueue.Peek()
@@ -67,7 +68,7 @@ func (dq *DelayQueue[T]) Take(quit <-chan struct{}) (val T, exit bool) {
 			case <-dq.notify:
 				continue
 			case <-quit:
-				return dq.phantom, true
+				return phantom, true
 			}
 		} else {
 			delay := head.Delay()
@@ -84,7 +85,7 @@ func (dq *DelayQueue[T]) Take(quit <-chan struct{}) (val T, exit bool) {
 				tm.Stop()
 			case <-quit:
 				tm.Stop()
-				return dq.phantom, true
+				return phantom, true
 			case <-tm.C:
 				dq.waiting.Store(false)
 			}
@@ -93,6 +94,7 @@ func (dq *DelayQueue[T]) Take(quit <-chan struct{}) (val T, exit bool) {
 }
 
 func (dq *DelayQueue[T]) Poll() (val T, exist bool) {
+	var phantom T
 	dq.mu.Lock()
 	defer dq.mu.Unlock()
 	head, exist := dq.priorityQueue.Peek()
@@ -100,6 +102,6 @@ func (dq *DelayQueue[T]) Poll() (val T, exist bool) {
 		dq.priorityQueue.Pop()
 		return head, true
 	} else {
-		return dq.phantom, false
+		return phantom, false
 	}
 }
