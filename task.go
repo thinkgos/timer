@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -22,19 +23,17 @@ var emptyJob = JobFunc(func() {})
 
 // Task 是双向链表的一个元素.
 type Task struct {
-	delayMs   int64 // 延迟多少(初始化后不可变), 单位: ms
-	job       Job   // 未来执行的工作任务
+	delay     atomic.Int64 // 延迟多少, 单位: 同 time.Duration
+	job       Job          // 未来执行的工作任务
 	rw        sync.RWMutex
 	taskEntry *taskEntry
 }
 
 // NewTask new task with delay duration and empty job, the accuracy is milliseconds.
 func NewTask(d time.Duration) *Task {
-	delayMs := int64(d / time.Millisecond)
-	return &Task{
-		delayMs: delayMs,
-		job:     emptyJob,
-	}
+	t := &Task{job: emptyJob}
+	t.delay.Store(int64(d))
+	return t
 }
 
 // NewTaskFunc new task with delay duration and function job, the accuracy is milliseconds.
@@ -81,7 +80,14 @@ func (t *Task) Cancel() {
 
 // Delay delay duration, the accuracy is milliseconds.
 func (t *Task) Delay() time.Duration {
-	return time.Duration(t.delayMs) * time.Millisecond
+	return time.Duration(t.delay.Load())
+}
+
+// SetDelay set delay duration, the accuracy is milliseconds.
+// Only valid readd to `Timer`, It has no effect on the task being running!
+func (t *Task) SetDelay(d time.Duration) *Task {
+	t.delay.Store(int64(d))
+	return t
 }
 
 // Activated return true if the task is activated.

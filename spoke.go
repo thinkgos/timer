@@ -130,7 +130,7 @@ type taskEntry struct {
 func newTaskEntry(task *Task) *taskEntry {
 	e := &taskEntry{
 		task:         task,
-		expirationMs: task.delayMs + time.Now().UnixMilli(),
+		expirationMs: task.delay.Load()/int64(time.Millisecond) + time.Now().UnixMilli(),
 	}
 	task.setTaskEntry(e)
 	return e

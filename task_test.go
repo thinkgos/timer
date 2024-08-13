@@ -31,6 +31,7 @@ func Test_Task_Job(t *testing.T) {
 	job := newTestJob(100)
 	task := NewTaskJob(100*time.Millisecond, job)
 	require.Equal(t, 100*time.Millisecond, task.Delay())
+	require.Equal(t, time.Second, task.SetDelay(time.Second).Delay())
 	task.Run()
 	require.Equal(t, wantJobValue, job.Value())
 
