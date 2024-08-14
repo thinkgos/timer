@@ -63,12 +63,12 @@ func WithGoPool(p GoPool) Option {
 
 // Timer is a timer
 type Timer struct {
-	tickMs      int64                          // 基本时间跨度, 单位ms
-	wheelSize   int                            // 轮的大小, 2的n次方
-	wheelMask   int                            // 轮的掩码
-	taskCounter atomic.Int64                   // 任务总数
-	delayQueue  *delayqueue.DelayQueue[*Spoke] // 延迟队列
-	goPool      GoPool                         // 协程池
+	tickMs      int64                          // basic time span, unit is milliseconds.
+	wheelSize   int                            // wheel size, the power of 2
+	wheelMask   int                            // wheel mask
+	taskCounter atomic.Int64                   // task total count
+	delayQueue  *delayqueue.DelayQueue[*Spoke] // delay queue
+	goPool      GoPool                         // goroutine pool
 	waitGroup   sync.WaitGroup                 // ensure the goroutine has finished.
 	rw          sync.RWMutex                   // protects following fields.
 	wheel       *TimingWheel                   // timing wheel, concurrent add task(read-lock) and advance clock only one(write-lock).

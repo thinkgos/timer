@@ -21,10 +21,10 @@ func (f JobFunc) Run() { f() }
 
 var emptyJob = JobFunc(func() {})
 
-// Task 是双向链表的一个元素.
+// Task timer task.
 type Task struct {
-	delay     atomic.Int64 // 延迟多少, 单位: 同 time.Duration
-	job       Job          // 未来执行的工作任务
+	delay     atomic.Int64 // delay duration
+	job       Job          // the job of future execution
 	rw        sync.RWMutex
 	taskEntry *taskEntry
 }

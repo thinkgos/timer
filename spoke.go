@@ -112,7 +112,7 @@ func CompareSpoke(sp1, sp2 *Spoke) int {
 	return 0
 }
 
-// taskEntry 是双向链表的一个元素.
+// taskEntry is an element of a linked list.
 type taskEntry struct {
 	// next and previous pointers in the doubly-linked list of elements.
 	// To simplify the implementation, internally a list l is implemented
@@ -121,9 +121,9 @@ type taskEntry struct {
 	// element (l.Front()).
 	prev *taskEntry
 	next *taskEntry
-	list atomic.Pointer[Spoke] // 此元素所属的列表
+	list atomic.Pointer[Spoke] // The list to which this element belongs.
 
-	expirationMs int64 // 到期时间, 绝对时间(初始化后不可变), 单位: ms
+	expirationMs int64 // expiration time, absolute time(immutable after first initialization), Units: ms
 	task         *Task
 }
 

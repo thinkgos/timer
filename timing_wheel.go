@@ -3,12 +3,12 @@ package timer
 import "sync/atomic"
 
 type TimingWheel struct {
-	timer         *Timer                      // belongs to timer
-	tickMs        int64                       // 时间轮的基本时间跨度, 单位ms
-	interval      int64                       // 时间轮的总体时间跨度, tickMs * wheelSize
-	spokes        []*Spoke                    // 时间轮的轮辐条
-	currentTime   int64                       // 时间轮的表盘指针, 表示当前时间轮所处的时间, 绝对时间, 单位ms.
-	overflowWheel atomic.Pointer[TimingWheel] // 更高层级时间轮
+	timer         *Timer                      // belongs to timer.
+	tickMs        int64                       // basic time span of the timing wheel , unit is milliseconds.
+	interval      int64                       // the overall time span of the time wheel, tickMs * wheelSize.
+	spokes        []*Spoke                    // the spoke of the timing wheel.
+	currentTime   int64                       // dial pointer of timing wheel, represents the current time of the timing wheel, absolute time,  unit is milliseconds.
+	overflowWheel atomic.Pointer[TimingWheel] // higher-level timing wheel.
 }
 
 func newTimingWheel(t *Timer, tickMs int64, startMs int64) *TimingWheel {
@@ -26,8 +26,8 @@ func newTimingWheel(t *Timer, tickMs int64, startMs int64) *TimingWheel {
 	return tw
 }
 
-// add 加到时间轮上
-// true:添加成功, false: 已取消或已过期
+// add to the timing wheel.
+// true: add success, false: canceled or already expired
 func (tw *TimingWheel) add(te *taskEntry) bool {
 	if te.cancelled() { // already cancelled
 		return false
