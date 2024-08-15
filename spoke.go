@@ -149,5 +149,5 @@ func (te *taskEntry) remove() {
 }
 
 func (te *taskEntry) cancelled() bool {
-	return te.task.getTaskEntry() != te
+	return !te.task.equalToTaskEntry(te)
 }

@@ -84,7 +84,7 @@ func (t *Task) Delay() time.Duration {
 }
 
 // SetDelay set delay duration, the accuracy is milliseconds.
-// Only valid readd to `Timer`, It has no effect on the task being running!
+// NOTE: only effect when re-add to `Timer`, It has no effect on the task being running!
 func (t *Task) SetDelay(d time.Duration) *Task {
 	t.delay.Store(int64(d))
 	return t
@@ -108,8 +108,8 @@ func (t *Task) setTaskEntry(entry *taskEntry) {
 	t.taskEntry = entry
 }
 
-func (t *Task) getTaskEntry() *taskEntry {
+func (t *Task) equalToTaskEntry(te *taskEntry) bool {
 	t.rw.RLock()
 	defer t.rw.RUnlock()
-	return t.taskEntry
+	return t.taskEntry == te
 }
