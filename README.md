@@ -35,6 +35,8 @@ Then import the package into your own code.
 
 ### Example
 
+use global `timer` instance.
+
 [embedmd]:# (_examples/sample/main.go go)
 ```go
 package main

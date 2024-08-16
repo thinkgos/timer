@@ -14,8 +14,8 @@ const (
 	DefaultTickMs = 1
 	// DefaultWheelSize default wheel size.
 	DefaultWheelSize = 512
-	// DefaultTimeUnit default time unit is milliseconds.
-	DefaultTimeUnit = time.Millisecond
+	// timeUnit time unit is milliseconds.
+	timeUnit = time.Millisecond
 )
 
 // ErrClosed is returned when the timer is closed.

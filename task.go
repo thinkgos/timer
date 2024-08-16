@@ -78,7 +78,7 @@ func (t *Task) Cancel() {
 	}
 }
 
-// Delay delay duration, the accuracy is milliseconds.
+// Delay delay duration.
 func (t *Task) Delay() time.Duration {
 	return time.Duration(t.delay.Load())
 }
