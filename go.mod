@@ -1,6 +1,6 @@
 module github.com/thinkgos/timer
 
-go 1.21
+go 1.22
 
 require (
 	github.com/panjf2000/ants/v2 v2.10.0
