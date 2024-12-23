@@ -14,28 +14,28 @@ type PriorityQueue[T comparable] struct {
 }
 
 func NewPriorityQueue[T cmp.Ordered](maxHeap bool, items ...T) *PriorityQueue[T] {
-	q := &PriorityQueue[T]{
+	pq := &PriorityQueue[T]{
 		container: &comparator.Container[T]{
 			Items:   items,
 			Desc:    maxHeap,
 			Compare: cmp.Compare[T],
 		},
 	}
-	heap.Init(q.container)
-	return q
+	heap.Init(pq.container)
+	return pq
 }
 
 // NewPriorityQueue initializes and returns an Queue, default min heap.
 func NewPriorityQueueWith[T comparable](maxHeap bool, cmp comparator.Comparable[T], items ...T) *PriorityQueue[T] {
-	q := &PriorityQueue[T]{
+	pq := &PriorityQueue[T]{
 		container: &comparator.Container[T]{
 			Items:   items,
 			Desc:    maxHeap,
 			Compare: cmp,
 		},
 	}
-	heap.Init(q.container)
-	return q
+	heap.Init(pq.container)
+	return pq
 }
 
 // Len returns the length of this priority queue.

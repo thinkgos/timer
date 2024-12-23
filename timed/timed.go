@@ -56,7 +56,7 @@ func NewTaskJob(d time.Duration, j Job) *Task { return timer.NewTaskJob(d, j) }
 
 type wrapperAnts struct{}
 
-func (s wrapperAnts) Go(f func()) {
+func (wrapperAnts) Go(f func()) {
 	Go(f)
 }
 

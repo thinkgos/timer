@@ -43,9 +43,9 @@ func (dq *DelayQueue[T]) Add(val T) {
 	dq.mu.Lock()
 	dq.priorityQueue.Push(val)
 	first, exist := dq.priorityQueue.Peek()
-	wakeup := exist && first == val && dq.waiting.CompareAndSwap(true, false)
+	wakeUp := exist && first == val && dq.waiting.CompareAndSwap(true, false)
 	dq.mu.Unlock()
-	if wakeup {
+	if wakeUp {
 		select {
 		case dq.notify <- struct{}{}:
 		default:
