@@ -25,40 +25,40 @@ var emptyJob = JobFunc(func() {})
 type Task struct {
 	delay     atomic.Int64 // delay duration
 	job       Job          // the job of future execution
-	rw        sync.RWMutex
-	taskEntry *taskEntry
+	rw        sync.RWMutex // protects following fields.
+	taskEntry *taskEntry   // the taskEntry to which the task belongs.
 }
 
-// NewTask new task with delay duration and empty job, the accuracy is milliseconds.
+// NewTask new task with delay duration and an empty job, the accuracy is milliseconds.
 func NewTask(d time.Duration) *Task {
 	t := &Task{job: emptyJob}
 	t.delay.Store(int64(d))
 	return t
 }
 
-// NewTaskFunc new task with delay duration and function job, the accuracy is milliseconds.
+// NewTaskFunc new task with delay duration and a function job, the accuracy is milliseconds.
 func NewTaskFunc(d time.Duration, f func()) *Task {
 	return NewTask(d).WithJobFunc(f)
 }
 
-// NewTaskJob new task with delay duration and job, the accuracy is milliseconds.
+// NewTaskJob new task with delay duration and a job, the accuracy is milliseconds.
 func NewTaskJob(d time.Duration, job Job) *Task {
 	return NewTask(d).WithJob(job)
 }
 
-// WithJobFunc with function job
+// WithJobFunc with a function job
 func (t *Task) WithJobFunc(f func()) *Task {
 	t.job = JobFunc(f)
 	return t
 }
 
-// WithJob with job
+// WithJob with a job
 func (t *Task) WithJob(j Job) *Task {
 	t.job = j
 	return t
 }
 
-// Run immediate call job.
+// Run immediate call job. implement Job interface.
 func (t *Task) Run() {
 	defer func() {
 		if err := recover(); err != nil {
@@ -68,7 +68,7 @@ func (t *Task) Run() {
 	t.job.Run()
 }
 
-// Cancel the task
+// Cancel the task.
 func (t *Task) Cancel() {
 	t.rw.Lock()
 	defer t.rw.Unlock()
@@ -78,13 +78,13 @@ func (t *Task) Cancel() {
 	}
 }
 
-// Delay delay duration.
+// Delay return the delay duration.
 func (t *Task) Delay() time.Duration {
 	return time.Duration(t.delay.Load())
 }
 
-// SetDelay set delay duration, the accuracy is milliseconds.
-// NOTE: only effect when re-add to `Timer`, It has no effect on the task being running!
+// SetDelay set a new delay duration, the accuracy is milliseconds.
+// NOTE: Only effect when re-add to `Timer`, It has no effect on the task being running!
 func (t *Task) SetDelay(d time.Duration) *Task {
 	t.delay.Store(int64(d))
 	return t
@@ -97,18 +97,19 @@ func (t *Task) Activated() bool {
 	return t.taskEntry != nil
 }
 
-func (t *Task) setTaskEntry(entry *taskEntry) {
+// setBelongTo set the task belongs to the task entry.
+func (t *Task) setBelongTo(te *taskEntry) {
 	t.rw.Lock()
 	defer t.rw.Unlock()
-	// if this task is already held by an existing task entry,
-	// we will remove such an entry first.
-	if t.taskEntry != nil && t.taskEntry != entry {
+	// if this task already belong to an existing task entry,
+	// we should remove such an entry first.
+	if t.taskEntry != nil && t.taskEntry != te {
 		t.taskEntry.remove()
 	}
-	t.taskEntry = entry
+	t.taskEntry = te
 }
 
-func (t *Task) equalToTaskEntry(te *taskEntry) bool {
+func (t *Task) isBelongTo(te *taskEntry) bool {
 	t.rw.RLock()
 	defer t.rw.RUnlock()
 	return t.taskEntry == te

@@ -104,16 +104,16 @@ func NewTimer(opts ...Option) *Timer {
 	return t
 }
 
-// TickMs basic time tick milliseconds.
+// TickMs return basic time tick milliseconds.
 func (t *Timer) TickMs() int64 { return t.tickMs }
 
-// WheelSize wheel size.
+// WheelSize return the wheel size.
 func (t *Timer) WheelSize() int { return t.wheelSize }
 
-// WheelMask wheel mask.
+// WheelMask return the wheel mask.
 func (t *Timer) WheelMask() int { return t.wheelMask }
 
-// TaskCounter the total number of tasks.
+// TaskCounter return the total number of tasks.
 func (t *Timer) TaskCounter() int64 { return t.taskCounter.Load() }
 
 // AfterFunc adds a function to the timer.
@@ -198,6 +198,8 @@ func (t *Timer) addSpokeToDelayQueue(spoke *Spoke) {
 func (t *Timer) addTaskEntry(te *taskEntry) {
 	if !t.wheel.add(te) {
 		// already expired or cancelled
+		// if cancelled, we ignore the task entry.
+		// if expired, we run the task job.
 		if !te.cancelled() {
 			t.goPool.Go(te.task.Run)
 		}

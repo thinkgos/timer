@@ -35,6 +35,10 @@ Then import the package into your own code.
 
 ### Example
 
+- [monitor](./_examples/monitor/main.go)
+- [repetition](./_examples/repetition/main.go)
+- [sample](./_examples/sample/main.go)
+
 use global `timer` instance.
 
 [embedmd]:# (_examples/sample/main.go go)

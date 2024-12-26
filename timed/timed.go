@@ -8,10 +8,10 @@ import (
 )
 
 var pool timer.GoPool = wrapperAnts{}
-var tim = timer.NewTimer(timer.WithGoPool(pool))
+var defaultTimer = timer.NewTimer(timer.WithGoPool(pool))
 
 func init() {
-	tim.Start()
+	defaultTimer.Start()
 }
 
 // alias
@@ -21,37 +21,37 @@ type (
 	JobFunc = timer.JobFunc
 )
 
-// TickMs Basic time tick milliseconds.
-func TickMs() int64 { return tim.TickMs() }
+// TickMs return Basic time tick milliseconds.
+func TickMs() int64 { return defaultTimer.TickMs() }
 
-// WheelSize wheel size.
-func WheelSize() int { return tim.WheelSize() }
+// WheelSize return the wheel size.
+func WheelSize() int { return defaultTimer.WheelSize() }
 
-// TaskCounter task total number of tasks.
-func TaskCounter() int64 { return tim.TaskCounter() }
+// TaskCounter return the total number of tasks.
+func TaskCounter() int64 { return defaultTimer.TaskCounter() }
 
 // AfterFunc adds a function to the timer.
-func AfterFunc(d time.Duration, f func()) (*Task, error) { return tim.AfterFunc(d, f) }
+func AfterFunc(d time.Duration, f func()) (*Task, error) { return defaultTimer.AfterFunc(d, f) }
 
 // AddTask adds a task to the timer.
-func AddTask(task *Task) error { return tim.AddTask(task) }
+func AddTask(task *Task) error { return defaultTimer.AddTask(task) }
 
 // Started have started or not.
-func Started() bool { return tim.Started() }
+func Started() bool { return defaultTimer.Started() }
 
 // Start the timer.
-func Start() { tim.Start() }
+func Start() { defaultTimer.Start() }
 
 // Stop the timer.
-func Stop() { tim.Stop() }
+func Stop() { defaultTimer.Stop() }
 
-// NewTask new task with delay duration and empty job, the accuracy is milliseconds.
+// NewTask new task with delay duration and an empty job, the accuracy is milliseconds.
 func NewTask(d time.Duration) *Task { return timer.NewTask(d) }
 
-// NewTaskFunc new task with delay duration and function job, the accuracy is milliseconds.
+// NewTaskFunc new task with delay duration and a function job, the accuracy is milliseconds.
 func NewTaskFunc(d time.Duration, f func()) *Task { return timer.NewTaskFunc(d, f) }
 
-// NewTaskJob new task with delay duration and job, the accuracy is milliseconds.
+// NewTaskJob new task with delay duration and a job, the accuracy is milliseconds.
 func NewTaskJob(d time.Duration, j Job) *Task { return timer.NewTaskJob(d, j) }
 
 type wrapperAnts struct{}

@@ -112,31 +112,30 @@ func CompareSpoke(sp1, sp2 *Spoke) int {
 	return 0
 }
 
-// taskEntry is an element of a linked list.
+// taskEntry is an element of a linked list, hold the task instance.
 type taskEntry struct {
 	// next and previous pointers in the doubly-linked list of elements.
 	// To simplify the implementation, internally a list l is implemented
 	// as a ring, such that &l.root is both the next element of the last
 	// list element (l.Back()) and the previous element of the first list
 	// element (l.Front()).
-	prev *taskEntry
-	next *taskEntry
-	list atomic.Pointer[Spoke] // The list to which this element belongs.
-
-	expirationMs int64 // expiration time, absolute time(immutable after first initialization), Units: ms
-	task         *Task
+	prev         *taskEntry
+	next         *taskEntry
+	list         atomic.Pointer[Spoke] // The list to which this element belongs.
+	expirationMs int64                 // expiration time, absolute time(immutable after first initialization), Units: ms
+	task         *Task                 // the task instance.
 }
 
 func newTaskEntry(task *Task) *taskEntry {
-	e := &taskEntry{
+	te := &taskEntry{
 		task:         task,
 		expirationMs: int64(task.Delay()/timeUnit) + time.Now().UnixMilli(),
 	}
-	task.setTaskEntry(e)
-	return e
+	task.setBelongTo(te)
+	return te
 }
 
-// ExpirationMs expiration milliseconds.
+// ExpirationMs return the expiration milliseconds.
 func (te *taskEntry) ExpirationMs() int64 { return te.expirationMs }
 
 func (te *taskEntry) remove() {
@@ -149,5 +148,5 @@ func (te *taskEntry) remove() {
 }
 
 func (te *taskEntry) cancelled() bool {
-	return !te.task.equalToTaskEntry(te)
+	return !te.task.isBelongTo(te)
 }
