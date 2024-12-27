@@ -43,3 +43,8 @@ func (te *taskEntry) remove() {
 func (te *taskEntry) cancelled() bool {
 	return !te.task.isBelongTo(te)
 }
+
+// activated return true if the task entry is activated.
+func (te *taskEntry) activated() bool {
+	return te.list.Load() != nil
+}

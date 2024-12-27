@@ -94,7 +94,11 @@ func (t *Task) SetDelay(d time.Duration) *Task {
 func (t *Task) Activated() bool {
 	t.rw.RLock()
 	defer t.rw.RUnlock()
-	return t.taskEntry != nil
+	// why need check task entry?
+	// when cancel set t.taskEntry to nil,
+	// if the task is expired, only remove the task entry from the spoke.
+	// so we should check the task entry..
+	return t.taskEntry != nil && t.taskEntry.activated()
 }
 
 // setBelongTo set the task belongs to the task entry.
