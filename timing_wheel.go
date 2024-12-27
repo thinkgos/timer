@@ -2,12 +2,21 @@ package timer
 
 import "sync/atomic"
 
+type Result int
+
+// the result of adding a task entry to the timing wheel.
+const (
+	Result_Success        Result = iota // success add
+	Result_Canceled                     // already canceled
+	Result_AlreadyExpired               // already expired
+)
+
 type TimingWheel struct {
 	timer         *Timer                      // belongs to timer.
 	tickMs        int64                       // basic time span of the timing wheel , unit is milliseconds.
 	interval      int64                       // the overall time span of the time wheel, tickMs * wheelSize.
 	spokes        []*Spoke                    // the spoke of the timing wheel.
-	currentTime   int64                       // dial pointer of timing wheel, represents the current time of the timing wheel, absolute time,  unit is milliseconds.
+	currentTime   int64                       // dial pointer of timing wheel, represents the current time of the timing wheel, absolute time, unit is milliseconds.
 	overflowWheel atomic.Pointer[TimingWheel] // higher-level timing wheel.
 }
 
@@ -28,15 +37,15 @@ func newTimingWheel(t *Timer, tickMs int64, startMs int64) *TimingWheel {
 
 // add to the timing wheel.
 // true: add success, false: canceled or already expired
-func (tw *TimingWheel) add(te *taskEntry) bool {
+func (tw *TimingWheel) add(te *taskEntry) Result {
 	if te.cancelled() { // already cancelled
-		return false
+		return Result_Canceled
 	}
 
 	expiration := te.ExpirationMs()
 	switch {
 	case expiration < tw.currentTime+tw.tickMs: // already expired
-		return false
+		return Result_AlreadyExpired
 	case expiration < tw.currentTime+tw.interval: // on the current time wheel
 		// Put in its own spoke
 		virtualId := expiration / tw.tickMs
@@ -52,7 +61,7 @@ func (tw *TimingWheel) add(te *taskEntry) bool {
 			// be enqueued multiple times.
 			tw.timer.addSpokeToDelayQueue(spoke)
 		}
-		return true
+		return Result_Success
 	default: // not on the current wheel, add a high-level time wheel.
 		overflowWheel := tw.overflowWheel.Load()
 		if overflowWheel == nil {

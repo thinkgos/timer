@@ -196,13 +196,11 @@ func (t *Timer) addSpokeToDelayQueue(spoke *Spoke) {
 }
 
 func (t *Timer) addTaskEntry(te *taskEntry) {
-	if !t.wheel.add(te) {
-		// already expired or cancelled
-		// if cancelled, we ignore the task entry.
-		// if expired, we run the task job.
-		if !te.cancelled() {
-			t.goPool.Go(te.task.Run)
-		}
+	// if success, we do not need deal the task entry, because it has be added to the timing wheel.
+	// if cancelled cancelled, we ignore the task entry.
+	// if already expired, we run the task job.
+	if t.wheel.add(te) == Result_AlreadyExpired {
+		t.goPool.Go(te.task.Run)
 	}
 }
 
