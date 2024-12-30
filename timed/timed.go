@@ -21,6 +21,9 @@ type (
 	JobFunc = timer.JobFunc
 )
 
+// Timer return the default timer.
+func Timer() *timer.Timer { return defaultTimer }
+
 // TickMs return Basic time tick milliseconds.
 func TickMs() int64 { return defaultTimer.TickMs() }
 

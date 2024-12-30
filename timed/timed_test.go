@@ -45,6 +45,7 @@ func Test_Task_Job(t *testing.T) {
 	task2.Run()
 }
 func Test_Timed(t *testing.T) {
+	require.NotNil(t, Timer())
 	require.Equal(t, int64(timer.DefaultTickMs), TickMs())
 	require.Equal(t, timer.DefaultWheelSize, WheelSize())
 	require.GreaterOrEqual(t, TaskCounter(), int64(0))
