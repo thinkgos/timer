@@ -10,7 +10,7 @@ import (
 
 	_ "net/http/pprof"
 
-	"github.com/thinkgos/timer/timed"
+	"github.com/thinkgos/timer"
 )
 
 // almost 1,000,000 task
@@ -27,24 +27,24 @@ func main() {
 				added++
 				ii := i + ranv
 
-				timed.Go(func() {
+				timer.Go(func() {
 					sum.Add(1)
 					delayms := int64(ii) * 20
-					task := timed.NewTask(time.Duration(delayms) * time.Millisecond).WithJob(&job{
+					task := timer.NewTask(time.Duration(delayms) * time.Millisecond).WithJob(&job{
 						sum:          sum,
 						expirationMs: time.Now().UnixMilli() + delayms,
 					})
-					timed.AddTask(task)
+					timer.AddTask(task)
 
 					// for test race
 					// if ii%0x03 == 0x00 {
-					// 	timed.Go(func() {
+					// 	timer.Go(func() {
 					// 		task.Cancel()
 					// 	})
 					// }
 				})
 			}
-			log.Printf("task: %v - %v added: %d", timed.TaskCounter(), sum.Load(), added)
+			log.Printf("task: %v - %v added: %d", timer.TaskCounter(), sum.Load(), added)
 		}
 	}()
 

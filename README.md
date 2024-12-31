@@ -15,7 +15,7 @@ Go implementation of Kafka's Hierarchical Timing Wheels.
 - `insert`, `delete`, `scan` task almost O(1).
 - Different from the time wheel of Linux, it has no maximum time limit.
 - Support millions of tasks.
-- `timed` is a global `timer` instance, that tick is 1ms. wheel size is 512, use [ants](https://github.com/panjf2000/ants) goroutine pool.
+- built-in a global `timer` instance, that tick is 1ms. wheel size is 512, use [ants](https://github.com/panjf2000/ants) goroutine pool.
 
 ## Usage
 
@@ -50,7 +50,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/thinkgos/timer/timed"
+	"github.com/thinkgos/timer"
 )
 
 func main() {
@@ -58,8 +58,8 @@ func main() {
 	for i := 0; i < 1000; i++ {
 		wg.Add(1)
 		index := i
-		_, _ = timed.AfterFunc(time.Duration(i)*100*time.Millisecond, func() {
-			fmt.Printf("%s: timer task %d is executed, remain task: %d\n", time.Now().String(), index, timed.TaskCounter())
+		_, _ = timer.AfterFunc(time.Duration(i)*100*time.Millisecond, func() {
+			fmt.Printf("%s: timer task %d is executed, remain task: %d\n", time.Now().String(), index, timer.TaskCounter())
 			wg.Done()
 		})
 	}
