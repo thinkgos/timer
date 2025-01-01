@@ -101,6 +101,28 @@ func (t *Task) Activated() bool {
 	return t.taskEntry != nil && t.taskEntry.activated()
 }
 
+// Expiry return the milliseconds as a Unix time when the task will be expired.
+// the number of milliseconds elapsed since January 1, 1970 UTC.
+// the value -1 indicate the task not activated.
+func (t *Task) Expiry() int64 {
+	t.rw.RLock()
+	defer t.rw.RUnlock()
+	if t.taskEntry != nil && t.taskEntry.activated() {
+		return t.taskEntry.ExpirationMs()
+	}
+	return -1
+}
+
+// ExpiryAt return the local time when the task will be expired.
+// the zero time indicate the task not activated.
+func (t *Task) ExpiryAt() time.Time {
+	if ms := t.Expiry(); ms < 0 {
+		return time.Time{}
+	} else {
+		return time.UnixMilli(ms)
+	}
+}
+
 // setBelongTo set the task belongs to the task entry.
 func (t *Task) setBelongTo(te *taskEntry) {
 	t.rw.Lock()

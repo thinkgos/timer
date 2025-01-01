@@ -53,6 +53,36 @@ func Test_Task_RecoverPanic(t *testing.T) {
 }
 
 func Test_Task_Activated(t *testing.T) {
-	task := NewTask(100 * time.Millisecond)
+	tm := NewTimer()
+	tm.Start()
+	task := NewTask(10 * time.Millisecond)
 	require.False(t, task.Activated())
+	err := tm.AddTask(task)
+	require.Nil(t, err)
+	require.True(t, task.Activated())
+	time.Sleep(time.Millisecond * 20)
+	require.False(t, task.Activated())
+}
+
+func Test_Task_Expiry(t *testing.T) {
+	delayMs := 10 * time.Millisecond
+
+	tm := NewTimer()
+	tm.Start()
+	task := NewTask(delayMs)
+	require.Equal(t, int64(-1), task.Expiry())
+	require.True(t, task.ExpiryAt().IsZero())
+
+	expiryAt := time.Now().Add(delayMs)
+	err := tm.AddTask(task)
+	require.Nil(t, err)
+
+	wantExpiryMs := expiryAt.UnixMilli()
+	wantExpiryAt := time.UnixMilli(wantExpiryMs)
+	require.Equal(t, wantExpiryMs, task.Expiry())
+	require.Equal(t, wantExpiryAt, task.ExpiryAt())
+
+	time.Sleep(time.Millisecond * 20)
+	require.Equal(t, int64(-1), task.Expiry())
+	require.True(t, task.ExpiryAt().IsZero())
 }
