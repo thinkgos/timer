@@ -9,14 +9,23 @@ import (
 
 // one or two second delay repetition example
 func main() {
-	i := 0
-	task := timer.NewTask(time.Second)
-	task.WithJobFunc(func() {
-		now := time.Now().String()
-		i++
-		timer.AddTask(task.SetDelay(time.Second * time.Duration((i%2 + 1))))
-		fmt.Printf("%s: repetition executed,\n", now)
-	})
-	timer.AddTask(task)
+	job := &RepetitionJob{
+		task: timer.NewTask(time.Second),
+		i:    1,
+	}
+	job.task.WithJob(job)
+	_ = timer.AddTask(job.task)
 	select {}
+}
+
+type RepetitionJob struct {
+	task *timer.Task
+	i    int
+}
+
+func (j *RepetitionJob) Run() {
+	now := time.Now().String()
+	j.i++
+	_ = timer.AddTask(j.task.SetDelay(time.Second * time.Duration((j.i%2 + 1))))
+	fmt.Printf("%s: repetition executed,\n", now)
 }
