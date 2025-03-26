@@ -1,7 +1,6 @@
 package timer
 
 import (
-	"errors"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -47,7 +46,7 @@ func Test_Task_Job(t *testing.T) {
 
 func Test_Task_RecoverPanic(t *testing.T) {
 	task := NewTaskFunc(100*time.Millisecond, func() {
-		panic(errors.New("panic"))
+		panic("panic")
 	})
 	require.NotPanics(t, task.Run)
 }

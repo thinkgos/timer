@@ -22,5 +22,5 @@ jobs:
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v7
         with:
-          args: -E misspell,whitespace,unconvert,noctx,musttag,goconst
-          version: latestll -E goimports,misspell,whitespace
+          args: -E misspell,whitespace,unconvert,noctx,musttag,errchkjson,errname,exhaustive,exptostd
+          version: latest
