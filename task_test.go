@@ -65,15 +65,15 @@ func Test_Task_Activated(t *testing.T) {
 }
 
 func Test_Task_Expiry(t *testing.T) {
-	delayMs := 10 * time.Millisecond
+	delay := 10 * time.Millisecond
 
 	tm := NewTimer()
 	tm.Start()
-	task := NewTask(delayMs)
+	task := NewTask(delay)
 	require.Equal(t, int64(-1), task.Expiry())
 	require.True(t, task.ExpiryAt().IsZero())
 
-	expiryAt := time.Now().Add(delayMs)
+	expiryAt := time.Now().Add(delay)
 	err := tm.AddTask(task)
 	require.Nil(t, err)
 

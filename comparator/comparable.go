@@ -6,9 +6,7 @@ import "time"
 // a positive number when v1 > v2 and zero when v1 == v2.
 type Comparable[T any] func(T, T) int
 
-func CompareTime(v1, v2 time.Time) int {
-	t1 := time.Time(v1)
-	t2 := time.Time(v2)
+func CompareTime(t1, t2 time.Time) int {
 	if t1.Before(t2) {
 		return -1
 	}

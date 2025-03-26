@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with: # BUG: typecheck error when enable all
-          args: --disable-all -E goimports,misspell,whitespace
+        uses: golangci/golangci-lint-action@v7
+        with:
+          args: -E misspell,whitespace,unconvert,noctx,musttag,goconst
           version: latest

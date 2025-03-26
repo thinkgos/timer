@@ -34,18 +34,18 @@ func Test_PriorityQueue_Value(t *testing.T) {
 	// Peek
 	val, ok := q.Peek()
 	require.True(t, ok)
-	require.Equal(t, 8, int(val))
+	require.Equal(t, 8, val)
 	require.Equal(t, 5, q.Len())
 
 	// Poll
 	val, ok = q.Pop()
 	require.True(t, ok)
-	require.Equal(t, 8, int(val))
+	require.Equal(t, 8, val)
 	require.Equal(t, 4, q.Len())
 
 	val, ok = q.Pop()
 	require.True(t, ok)
-	require.Equal(t, 12, int(val))
+	require.Equal(t, 12, val)
 	require.Equal(t, 3, q.Len())
 
 	// Clear
@@ -53,11 +53,11 @@ func Test_PriorityQueue_Value(t *testing.T) {
 
 	val, ok = q.Peek()
 	require.False(t, ok)
-	require.Equal(t, 0, int(val))
+	require.Equal(t, 0, val)
 
 	val, ok = q.Pop()
 	require.False(t, ok)
-	require.Equal(t, 0, int(val))
+	require.Equal(t, 0, val)
 }
 
 func Test_PriorityQueue_MinHeap(t *testing.T) {

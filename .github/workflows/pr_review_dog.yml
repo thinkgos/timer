@@ -19,8 +19,8 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
 
-      - name: golangci-lint
-        uses: reviewdog/action-golangci-lint@v2
-        with: # BUG: typecheck error when enable all
-          args: --disable-all -E goimports,misspell,whitespace
-          version: latest
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v7
+        with:
+          args: -E misspell,whitespace,unconvert,noctx,musttag,goconst
+          version: latestll -E goimports,misspell,whitespace
