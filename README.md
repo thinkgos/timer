@@ -6,7 +6,7 @@ Go implementation of Kafka's Hierarchical Timing Wheels.
 [![codecov](https://codecov.io/gh/thinkgos/timer/branch/main/graph/badge.svg)](https://codecov.io/gh/thinkgos/timer)
 [![Tests](https://github.com/thinkgos/timer/actions/workflows/ci.yml/badge.svg)](https://github.com/thinkgos/timer/actions/workflows/ci.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/thinkgos/timer)](https://goreportcard.com/report/github.com/thinkgos/timer)
-[![Licence](https://img.shields.io/github/license/thinkgos/timer)](https://raw.githubusercontent.com/thinkgos/timer/main/LICENSE)
+[![License](https://img.shields.io/github/license/thinkgos/timer)](https://raw.githubusercontent.com/thinkgos/timer/main/LICENSE)
 [![Tag](https://img.shields.io/github/v/tag/thinkgos/timer)](https://github.com/thinkgos/timer/tags)
 
 ## Feature
