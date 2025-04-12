@@ -19,9 +19,11 @@ func newTestJob(val int64) *testJob {
 	t.val.Store(val)
 	return t
 }
+
 func (t *testJob) Value() int64 {
 	return t.val.Load()
 }
+
 func (t *testJob) Run() {
 	t.val.Store(testWantJobValue)
 }
