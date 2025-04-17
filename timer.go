@@ -27,6 +27,11 @@ type GoPool interface {
 	Go(f func())
 }
 
+// TaskContainer a container hold task
+type TaskContainer interface {
+	DerefTask() *Task
+}
+
 type goroutine struct{}
 
 // Go implements GoPool interface.
@@ -133,6 +138,11 @@ func (t *Timer) AddTask(task *Task) error {
 	}
 	t.addTaskEntry(newTaskEntry(task))
 	return nil
+}
+
+// AddDerefTask adds a task from TaskContainer to the timer.
+func (t *Timer) AddDerefTask(tc TaskContainer) error {
+	return t.AddTask(tc.DerefTask())
 }
 
 // Started have started or not.

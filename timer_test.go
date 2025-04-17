@@ -48,7 +48,7 @@ func Test_Timer_Start_Stop_Restart(t *testing.T) {
 	// timer is started
 	_, err = tm.AfterFunc(time.Millisecond*100, func() {})
 	require.Nil(t, err)
-	err = tm.AddTask(NewTask(100 * time.Millisecond))
+	err = tm.AddDerefTask(NewTask(100 * time.Millisecond))
 	require.Nil(t, err)
 
 	tm.Start() // double start, not start again.

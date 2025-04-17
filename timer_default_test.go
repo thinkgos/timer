@@ -26,7 +26,7 @@ func ExampleDefaultTimer() {
 	})
 	_ = AddTask(canceledTaskThenAddAgain)
 	canceledTaskThenAddAgain.Cancel()
-	_ = AddTask(NewTask(1025 * time.Millisecond).WithJobFunc(func() {
+	_ = AddDerefTask(NewTask(1025 * time.Millisecond).WithJobFunc(func() {
 		fmt.Println(200)
 	}))
 	_ = AddTask(canceledTaskThenAddAgain)

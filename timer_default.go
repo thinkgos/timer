@@ -31,6 +31,9 @@ func AfterFunc(d time.Duration, f func()) (*Task, error) { return defaultTimer.A
 // AddTask adds a task to the timer.
 func AddTask(task *Task) error { return defaultTimer.AddTask(task) }
 
+// AddDerefTask adds a task from TaskContainer to the timer.
+func AddDerefTask(task TaskContainer) error { return defaultTimer.AddDerefTask(task) }
+
 // Started have started or not.
 func Started() bool { return defaultTimer.Started() }
 

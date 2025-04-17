@@ -20,6 +20,8 @@ type JobFunc func()
 func (f JobFunc) Run() { f() }
 
 var emptyJob = JobFunc(func() {})
+var _ TaskContainer = (*Task)(nil)
+var _ Job = (*Task)(nil)
 
 // Task timer task.
 type Task struct {
@@ -57,6 +59,9 @@ func (t *Task) WithJob(j Job) *Task {
 	t.job = j
 	return t
 }
+
+// DerefTask implements TaskContainer.
+func (t *Task) DerefTask() *Task { return t }
 
 // Run immediate call job. implement Job interface.
 func (t *Task) Run() {
