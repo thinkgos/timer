@@ -7,32 +7,59 @@ import (
 	"github.com/thinkgos/timer/go/heap"
 )
 
+type Option[T comparable] func(*PriorityQueue[T])
+
+func WithMaxHeap[T comparable]() Option[T] {
+	return func(pq *PriorityQueue[T]) {
+		pq.container.Desc = true
+	}
+}
+
+func WithCompare[T comparable](cmp comparator.Comparable[T]) Option[T] {
+	return func(pq *PriorityQueue[T]) {
+		pq.container.Compare = cmp
+	}
+}
+
+func WithItems[T comparable](items ...T) Option[T] {
+	return func(pq *PriorityQueue[T]) {
+		pq.container.Items = items
+	}
+}
+
 // PriorityQueue represents an unbounded priority queue based on a priority heap.
 // It implements heap.Interface.
 type PriorityQueue[T comparable] struct {
 	container *comparator.Container[T]
 }
 
-func NewPriorityQueue[T cmp.Ordered](maxHeap bool, items ...T) *PriorityQueue[T] {
+// NewPriorityQueue initializes and returns a priority Queue, default min heap.
+func NewPriorityQueue[T cmp.Ordered](opts ...Option[T]) *PriorityQueue[T] {
 	pq := &PriorityQueue[T]{
 		container: &comparator.Container[T]{
-			Items:   items,
-			Desc:    maxHeap,
+			Items:   []T{},
+			Desc:    false,
 			Compare: cmp.Compare[T],
 		},
+	}
+	for _, f := range opts {
+		f(pq)
 	}
 	heap.Init(pq.container)
 	return pq
 }
 
-// NewPriorityQueue initializes and returns an Queue, default min heap.
-func NewPriorityQueueWith[T comparable](maxHeap bool, cmp comparator.Comparable[T], items ...T) *PriorityQueue[T] {
+// NewPriorityQueueWith initializes and returns a priority Queue, default min heap.
+func NewPriorityQueueWith[T comparable](cmp comparator.Comparable[T], opts ...Option[T]) *PriorityQueue[T] {
 	pq := &PriorityQueue[T]{
 		container: &comparator.Container[T]{
-			Items:   items,
-			Desc:    maxHeap,
+			Items:   []T{},
+			Desc:    false,
 			Compare: cmp,
 		},
+	}
+	for _, f := range opts {
+		f(pq)
 	}
 	heap.Init(pq.container)
 	return pq

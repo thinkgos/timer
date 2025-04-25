@@ -27,7 +27,7 @@ func NewDelayQueue[T Delayed](cmp comparator.Comparable[T]) *DelayQueue[T] {
 	return &DelayQueue[T]{
 		notify:        make(chan struct{}, 1),
 		timeUnit:      time.Millisecond,
-		priorityQueue: queue.NewPriorityQueueWith(false, cmp),
+		priorityQueue: queue.NewPriorityQueueWith(cmp),
 	}
 }
 
