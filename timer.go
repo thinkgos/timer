@@ -13,7 +13,7 @@ const (
 	// DefaultTickMs default tick milliseconds.
 	DefaultTickMs = 1
 	// DefaultWheelSize default wheel size.
-	DefaultWheelSize = 512
+	DefaultWheelSize = 128
 )
 
 // ErrClosed is returned when the timer is closed.
