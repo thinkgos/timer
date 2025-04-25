@@ -2,7 +2,6 @@ package delayqueue
 
 import (
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/thinkgos/timer/comparator"
@@ -20,7 +19,7 @@ type DelayQueue[T Delayed] struct {
 	timeUnit      time.Duration           // time unit. default 1 millisecond.
 	mu            sync.Mutex              // protects following fields
 	priorityQueue *queue.PriorityQueue[T] // priority queue
-	waiting       atomic.Bool             // waiting or not.
+	waiting       bool                    // mark waiting or not.
 }
 
 // NewDelayQueue new delay queue instance.
@@ -43,7 +42,10 @@ func (dq *DelayQueue[T]) Add(val T) {
 	dq.mu.Lock()
 	dq.priorityQueue.Push(val)
 	first, exist := dq.priorityQueue.Peek()
-	wakeUp := exist && first == val && dq.waiting.CompareAndSwap(true, false)
+	wakeUp := exist && first == val && dq.waiting
+	if wakeUp {
+		dq.waiting = false
+	}
 	dq.mu.Unlock()
 	if wakeUp {
 		select {
@@ -61,7 +63,7 @@ func (dq *DelayQueue[T]) Take(quit <-chan struct{}) (val T, exit bool) {
 		dq.mu.Lock()
 		head, exist := dq.priorityQueue.Peek()
 		if !exist {
-			dq.waiting.Store(true)
+			dq.waiting = true
 			dq.mu.Unlock()
 
 			select {
@@ -77,7 +79,7 @@ func (dq *DelayQueue[T]) Take(quit <-chan struct{}) (val T, exit bool) {
 				dq.mu.Unlock()
 				return head, false
 			}
-			dq.waiting.Store(true)
+			dq.waiting = true
 			dq.mu.Unlock()
 			tm := time.NewTimer(time.Duration(delay) * dq.timeUnit)
 			select {
@@ -87,7 +89,6 @@ func (dq *DelayQueue[T]) Take(quit <-chan struct{}) (val T, exit bool) {
 				tm.Stop()
 				return phantom, true
 			case <-tm.C:
-				dq.waiting.Store(false)
 			}
 		}
 	}
