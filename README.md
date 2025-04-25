@@ -67,6 +67,10 @@ func main() {
 }
 ```
 
+## How it works
+
+- [How it works](./how_it_works.md)
+
 ## References
 
 - [kafka timing wheels](https://github.com/apache/kafka/tree/trunk/server-common/src/main/java/org/apache/kafka/server/util/timer)
