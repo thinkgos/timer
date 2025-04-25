@@ -61,6 +61,7 @@ func (dq *DelayQueue[T]) Take(quit <-chan struct{}) (val T, exit bool) {
 
 	for {
 		dq.mu.Lock()
+		dq.waiting = false
 		head, exist := dq.priorityQueue.Peek()
 		if !exist {
 			dq.waiting = true
