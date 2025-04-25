@@ -70,7 +70,7 @@ type Timer struct {
 	wheelSize   int                            // wheel size, the power of 2
 	wheelMask   int                            // wheel mask
 	taskCounter atomic.Int64                   // task total count
-	delayQueue  *delayqueue.DelayQueue[*Spoke] // delay queue
+	delayQueue  *delayqueue.DelayQueue[*Spoke] // delay queue, the priority queue use spoke's expiration time as `cmp`.
 	goPool      GoPool                         // goroutine pool
 	waitGroup   sync.WaitGroup                 // ensure the goroutine has finished.
 	rw          sync.RWMutex                   // protects following fields.
