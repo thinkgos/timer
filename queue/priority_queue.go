@@ -7,30 +7,34 @@ import (
 	"github.com/thinkgos/timer/go/heap"
 )
 
+// PriorityQueue represents an unbounded priority queue based on a priority heap.
+// It implements heap.Interface.
+type PriorityQueue[T comparable] struct {
+	container *comparator.Container[T]
+}
+
+// Option customize the PriorityQueue
 type Option[T comparable] func(*PriorityQueue[T])
 
+// WithMaxHeap customize max heap
 func WithMaxHeap[T comparable]() Option[T] {
 	return func(pq *PriorityQueue[T]) {
 		pq.container.Desc = true
 	}
 }
 
+// WithCompare customize comparator.Comparable
 func WithCompare[T comparable](cmp comparator.Comparable[T]) Option[T] {
 	return func(pq *PriorityQueue[T]) {
 		pq.container.Compare = cmp
 	}
 }
 
+// WithItems customize initialize items
 func WithItems[T comparable](items ...T) Option[T] {
 	return func(pq *PriorityQueue[T]) {
 		pq.container.Items = items
 	}
-}
-
-// PriorityQueue represents an unbounded priority queue based on a priority heap.
-// It implements heap.Interface.
-type PriorityQueue[T comparable] struct {
-	container *comparator.Container[T]
 }
 
 // NewPriorityQueue initializes and returns a priority Queue, default min heap.
