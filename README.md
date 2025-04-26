@@ -15,7 +15,7 @@ Go implementation of Kafka's Hierarchical Timing Wheels.
 - `insert`, `delete`, `scan` task almost O(1).
 - Different from the time wheel of Linux, it has no maximum time limit.
 - It is not advancing per **TickMs**, it uses `DelayQueue` to directly take out the most recently expired `Spoke`, and then advances to the expiration time of the `Spoke` in one step, preventing empty advances.
-- built-in a global `timer` instance, that tick is 1ms. wheel size is 512, use [ants](https://github.com/panjf2000/ants) goroutine pool.
+- built-in a global `timer` instance, that tick is 1ms. wheel size is 128, use [ants](https://github.com/panjf2000/ants) goroutine pool.
 
 ## Usage
 
