@@ -6,16 +6,16 @@ type Result int
 
 // the result of adding a task entry to the timing wheel.
 const (
-	Result_Success        Result = iota // success add
+	Result_Success        Result = iota // success added
 	Result_Canceled                     // already canceled
 	Result_AlreadyExpired               // already expired
 )
 
 type TimingWheel struct {
-	timer         *Timer                      // belongs to timer.
-	tickMs        int64                       // basic time span of the timing wheel , unit is milliseconds.
+	timer         *Timer                      // belongs to the timer.
+	tickMs        int64                       // basic time span of the timing wheel, unit is milliseconds.
 	interval      int64                       // the overall time span of the time wheel, tickMs * wheelSize.
-	spokes        []*Spoke                    // the spoke of the timing wheel.
+	spokes        []*Spoke                    // the spokes of the timing wheel.
 	currentTime   int64                       // dial pointer of timing wheel, represents the current time of the timing wheel, absolute time, unit is milliseconds.
 	overflowWheel atomic.Pointer[TimingWheel] // higher-level timing wheel.
 }

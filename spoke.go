@@ -8,10 +8,10 @@ import (
 
 // Spoke a spoke of the wheel.
 type Spoke struct {
-	root        taskEntry // sentinel list element, only &root, root.prev, and root.next are used
-	taskCounter *atomic.Int64
-	expiration  atomic.Int64
-	mu          sync.Mutex
+	root        taskEntry     // sentinel list element, only &root, root.prev, and root.next are used
+	expiration  atomic.Int64  // the expiration time
+	mu          sync.Mutex    // protects all list's action.
+	taskCounter *atomic.Int64 // same as Timer.taskCounter
 }
 
 func NewSpoke(taskCounter *atomic.Int64) *Spoke {
@@ -82,8 +82,8 @@ func (sp *Spoke) Flush(f func(*taskEntry)) {
 	sp.SetExpiration(-1)
 }
 
-// SetExpiration the spoke's expiration time
-// Returns true if the expiration time is changed
+// SetExpiration set the spoke's expiration time
+// Returns true if the expiration time changes.
 func (sp *Spoke) SetExpiration(expirationMs int64) bool {
 	return sp.expiration.Swap(expirationMs) != expirationMs
 }
@@ -100,7 +100,7 @@ func (sp *Spoke) Delay() int64 {
 	return delay
 }
 
-// CompareSpoke compare two `Spoke` with expiration.
+// CompareSpoke compares two Spoke instances based on their expiration time.
 func CompareSpoke(sp1, sp2 *Spoke) int {
 	v1, v2 := sp1.GetExpiration(), sp2.GetExpiration()
 	if v1 < v2 {

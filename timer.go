@@ -69,7 +69,7 @@ type Timer struct {
 	tickMs      int64                          // basic time span, unit is milliseconds.
 	wheelSize   int                            // wheel size, the power of 2
 	wheelMask   int                            // wheel mask
-	taskCounter atomic.Int64                   // task total count
+	taskCounter atomic.Int64                   // the total number of tasks.
 	delayQueue  *delayqueue.DelayQueue[*Spoke] // delay queue, the priority queue use spoke's expiration time as `cmp`.
 	goPool      GoPool                         // goroutine pool
 	waitGroup   sync.WaitGroup                 // ensure the goroutine has finished.
@@ -168,7 +168,7 @@ func (t *Timer) Start() {
 					break
 				}
 				for exist := true; exist; spoke, exist = t.delayQueue.Poll() {
-					t.advanceWheelClock(spoke.GetExpiration())
+					t.advanceClock(spoke.GetExpiration())
 					t.flushSpoke(spoke)
 				}
 			}
@@ -187,7 +187,7 @@ func (t *Timer) Stop() {
 	}
 }
 
-func (t *Timer) advanceWheelClock(expiration int64) {
+func (t *Timer) advanceClock(expiration int64) {
 	t.rw.Lock()
 	defer t.rw.Unlock()
 	t.wheel.advanceClock(expiration)
