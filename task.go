@@ -20,7 +20,7 @@ type JobFunc func()
 func (f JobFunc) Run() { f() }
 
 var emptyJob = JobFunc(func() {})
-var _ TaskContainer = (*Task)(nil)
+var _ DerefTask = (*Task)(nil)
 var _ Job = (*Task)(nil)
 
 // Task timer task.

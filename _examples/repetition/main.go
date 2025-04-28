@@ -19,6 +19,8 @@ type RepetitionJob struct {
 	i    int
 }
 
+var _ timer.TaskContainer = (*RepetitionJob)(nil)
+
 func NewRepetitionJob() *RepetitionJob {
 	j := &RepetitionJob{
 		task: timer.NewTask(time.Second),
