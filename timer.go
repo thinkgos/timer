@@ -143,7 +143,7 @@ func (t *Timer) AddTask(task *Task) error {
 	return nil
 }
 
-// AddDerefTask adds a task from TaskContainer to the timer.
+// AddDerefTask adds a task from DerefTask to the timer.
 func (t *Timer) AddDerefTask(tc DerefTask) error {
 	return t.AddTask(tc.DerefTask())
 }
