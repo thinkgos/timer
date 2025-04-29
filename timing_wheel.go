@@ -61,7 +61,7 @@ func (tw *TimingWheel) add(te *taskEntry) Result {
 			// and the previous spokes gets reused; further calls to set the expiration within the same wheel cycle
 			// will pass in the same value and hence return false, thus the spoke with the same expiration will not
 			// be enqueued multiple times.
-			tw.timer.addSpokeToDelayQueue(spoke)
+			tw.timer.addToDelayQueue(spoke)
 		}
 		return Result_Success
 	default: // not on the current wheel, add a high-level time wheel.

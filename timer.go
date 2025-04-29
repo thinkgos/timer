@@ -192,10 +192,11 @@ func (t *Timer) Stop() {
 	}
 }
 
-func (t *Timer) addSpokeToDelayQueue(spoke *Spoke) {
+func (t *Timer) addToDelayQueue(spoke *Spoke) {
 	t.delayQueue.Add(spoke)
 }
 
+// NOTE: should be call when `Timer.rw` lock.
 func (t *Timer) addTaskEntry(te *taskEntry) {
 	// if success, we do not need deal the task entry, because it has be added to the timing wheel.
 	// if cancelled cancelled, we ignore the task entry.
