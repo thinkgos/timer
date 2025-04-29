@@ -170,10 +170,12 @@ func (t *Timer) Start() {
 				if exit {
 					break
 				}
+				t.rw.Lock()
 				for exist := true; exist; spoke, exist = t.delayQueue.Poll() {
-					t.advanceClock(spoke.GetExpiration())
-					t.flushSpoke(spoke)
+					t.wheel.advanceClock(spoke.GetExpiration())
+					spoke.Flush(t.addTaskEntry) // reinsert task entry to the timer
 				}
+				t.rw.Unlock()
 			}
 		}()
 	}
@@ -188,18 +190,6 @@ func (t *Timer) Stop() {
 		t.waitGroup.Wait() // Ensure the goroutine has finished
 		t.closed = true
 	}
-}
-
-func (t *Timer) advanceClock(expiration int64) {
-	t.rw.Lock()
-	defer t.rw.Unlock()
-	t.wheel.advanceClock(expiration)
-}
-
-func (t *Timer) flushSpoke(spoke *Spoke) {
-	t.rw.RLock()
-	defer t.rw.RUnlock()
-	spoke.Flush(t.addTaskEntry) // reinsert task entry to the timer
 }
 
 func (t *Timer) addSpokeToDelayQueue(spoke *Spoke) {
