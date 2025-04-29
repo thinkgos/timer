@@ -53,6 +53,8 @@ func (tw *TimingWheel) add(te *taskEntry) Result {
 		spoke.Add(te)
 
 		// Set the spoke expiration time
+		// It safe, because only change when `Timer.rw` lock. @Spoke.Add @Spoke.Flush
+		// Here `Timer.rw.RLock` concurrency change safe too.
 		if spoke.SetExpiration(virtualId * tw.tickMs) {
 			// The spoke needs to be enqueued because it was an expired spoke
 			// We only need to enqueue the spoke when its expiration time has changed, i.e. the wheel has advanced
