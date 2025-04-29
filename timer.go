@@ -199,7 +199,7 @@ func (t *Timer) advanceClock(expiration int64) {
 func (t *Timer) flushSpoke(spoke *Spoke) {
 	t.rw.RLock()
 	defer t.rw.RUnlock()
-	spoke.Flush(t.reinsert)
+	spoke.Flush(t.addTaskEntry) // reinsert task entry to the timer
 }
 
 func (t *Timer) addSpokeToDelayQueue(spoke *Spoke) {
@@ -213,8 +213,4 @@ func (t *Timer) addTaskEntry(te *taskEntry) {
 	if t.wheel.add(te) == Result_AlreadyExpired {
 		t.goPool.Go(te.task.Run)
 	}
-}
-
-func (t *Timer) reinsert(te *taskEntry) {
-	t.addTaskEntry(te)
 }
