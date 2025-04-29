@@ -31,23 +31,27 @@
 
 初始情况下, 表盘指针`currentTime`指向时间格0, 此时有一个定时为3ms的任务添加到时间轮, 会被放到时间格为3的`spoke`上.
 
-![p1](./assets/p1.svg)
+<!-- ![p1](./assets/p1.svg) -->
+![p1](https://raw.githubusercontent.com/thinkgos/timer/main/assets/p1.svg)
 
 随着时间的推移, 表盘指针`currentTime`不断推进, 过了3ms之后, 当`currentTime`指向时间格3时, 就需要将对应的`spoke`上的任务进行到期操作.
 
-![p2](./assets/p2.svg)
+<!-- ![p2](./assets/p2.svg) -->
+![p2](https://raw.githubusercontent.com/thinkgos/timer/main/assets/p2.svg)
 
 等会, 如何推进, 是每`tickMs`进行推进么? 这很有问题, 当推进1ms时, 到达时间格1, 这时提取对应`spoke`上的任务进行到期操作, 发现上面并没有任务, 存在*空推进*问题, 造成性能损耗, 这时借助`DelayQueue`来推跳跃式推进时间轮, 跳过无任务的空时间格. `DelayQueue`是一个无界的阻塞队列, 用于存放实现了`Delayed`接口的对象, 它会根据对象的延迟时间来决定是否可以从中取出元素. 只有当对象的延迟时间到期后, 才能从队列中取出该对象.
 
 现在我们引入`DelayQueue`来解决*空推进*问题, 同前面一样, 初始情况下, 表盘指针`currentTime`指向时间格0, 此时有一个定时为3ms的任务添加到时间轮, 会被放到时间格为3的`spoke`上. `spoke`持有一个未来到期的绝对时间`expiration`, 这时时间格3上的`spoke`会被加`DelayQueue`. 然后唤醒推进器从`DelayQueue`查看第一个元素, 根据`spoke`的延迟时间, 一直等到时间到期后, 推进器立即将`currentTime`推进并指向时间格3, 然后将对应`spoke`上的任务进行到期操作.
 
-![p3](./assets/p3.svg)
+<!-- ![p3](./assets/p3.svg) -->
+![p3](https://raw.githubusercontent.com/thinkgos/timer/main/assets/p3.svg)
 
 假如此时有一个定时为5ms的任务插入, 会被放到时间格8中; 此时又有一个定时为15ms的任务插入, 那么会复用原来的时间格, 会被放到时间格2中. 此时时间格8, 时间格2的`spoke`添加到`DelayQueue`, `DelayQueue`会根据最近延迟到期的时间进行延迟等待, 一直等到时间到期, 才进行推进.
 
 假如此时有一个定时为40ms的任务插入, 当前时间轮无法容纳, 应该如何处理? 这时采用层级时间轮的概念, 当任务的到期时间超过了当前时间轮所表示的时间范围时, 就会尝试添加到更高级的时间轮中. 按这情况, 这个任务会被插到第二层时间轮的时间格2中并将对应`spoke`添加到`DelayQueue`, 此时如何还有一个300ms的定时任务, 这个任务将被插到第三层时间格1中并将对应`spoke`添加到`DelayQueue`.
 
-![p4](./assets/p4.svg)
+<!-- ![p4](./assets/p4.svg) -->
+![p4](https://raw.githubusercontent.com/thinkgos/timer/main/assets/p4.svg)
 
 ## 时间轮降级
 
