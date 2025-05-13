@@ -82,6 +82,7 @@ func (dq *DelayQueue[T]) Take(quit <-chan struct{}) (val T, exit bool) {
 			}
 			dq.waiting = true
 			dq.mu.Unlock()
+			// TODO: try to use tm out of for loop, Reuse it!!
 			tm := time.NewTimer(time.Duration(delay) * dq.timeUnit)
 			select {
 			case <-dq.notify:
