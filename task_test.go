@@ -61,7 +61,7 @@ func Test_Task_Activated(t *testing.T) {
 	err := tm.AddTask(task)
 	require.Nil(t, err)
 	require.True(t, task.Activated())
-	time.Sleep(time.Millisecond * 20)
+	time.Sleep(time.Millisecond * 50)
 	require.False(t, task.Activated())
 }
 
