@@ -82,16 +82,16 @@ func (dq *DelayQueue[T]) Take(quit <-chan struct{}) (val T, exit bool) {
 			}
 			dq.waiting = true
 			dq.mu.Unlock()
-			// TODO: try to use tm out of for loop, Reuse it!!
-			tm := time.NewTimer(time.Duration(delay) * dq.timeUnit)
+			// TODO: try to use t out of for loop, Reuse it!!
+			t := time.NewTimer(time.Duration(delay) * dq.timeUnit)
 			select {
-			case <-dq.notify:
-				tm.Stop()
 			case <-quit:
-				tm.Stop()
+				t.Stop()
 				return phantom, true
-			case <-tm.C:
+			case <-dq.notify:
+			case <-t.C:
 			}
+			t.Stop()
 		}
 	}
 }
