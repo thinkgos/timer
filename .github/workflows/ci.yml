@@ -1,5 +1,3 @@
-permissions:
-  contents: read
 name: Tests
 
 on:
@@ -12,6 +10,9 @@ on:
       - "**.md"
       - "assets/**"
 
+permissions:
+  contents: read
+
 env:
   GO111MODULE: on
   GOPROXY: "https://proxy.golang.org"
@@ -22,7 +23,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        go-version: ["1.22.x", "1.24.x"]
+        go-version: ["1.22.x", "1.25.x"]
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
@@ -63,7 +64,7 @@ jobs:
           go test -v -race -coverprofile=coverage -covermode=atomic ./...
 
       - name: Upload coverage to Codecov
-        if: matrix.os == 'ubuntu-latest' && matrix.go-version == '1.24.x'
+        if: matrix.os == 'ubuntu-latest' && matrix.go-version == '1.25.x'
         uses: codecov/codecov-action@v5
         with:
           files: ./coverage

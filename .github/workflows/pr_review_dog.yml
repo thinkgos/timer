@@ -1,5 +1,3 @@
-permissions:
-  contents: read
 name: Reviewdog
 
 on:
@@ -7,6 +5,9 @@ on:
     paths-ignore:
       - "**.md"
       - "assets/**"
+
+permissions:
+  contents: read
 
 jobs:
   golangci-lint:
@@ -17,7 +18,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: "1.24.x"
+          go-version: "1.25.x"
           cache: true
 
       - name: Check out code into the Go module directory

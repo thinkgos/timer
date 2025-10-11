@@ -1,5 +1,3 @@
-permissions:
-  contents: read
 name: Lint
 
 on:
@@ -7,6 +5,9 @@ on:
     paths-ignore:
       - "**.md"
       - "assets/**"
+
+permissions:
+  contents: read
 
 jobs:
   golang-ci:
