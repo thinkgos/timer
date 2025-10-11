@@ -8,7 +8,9 @@ on:
 
 permissions:
   contents: read
-
+  packages: read
+  issues: write
+  
 jobs:
   golang-ci:
     name: GolangCi-Lint
