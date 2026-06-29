@@ -3,7 +3,7 @@ module github.com/thinkgos/timer
 go 1.22
 
 require (
-	github.com/panjf2000/ants/v2 v2.12.0
+	github.com/panjf2000/ants/v2 v2.12.1
 	github.com/stretchr/testify v1.11.1
 )
 
