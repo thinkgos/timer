@@ -21,6 +21,9 @@ const (
 // ErrClosed is returned when the timer is closed.
 var ErrClosed = errors.New("timer: use of closed timer")
 
+// ErrInvalidDelay is returned when the task's delay is not greater than 0.
+var ErrInvalidDelay = errors.New("timer: task delay must be greater than 0")
+
 // goroutinePool is a reusable go pool.
 var goroutinePool = goroutine{}
 
@@ -133,6 +136,7 @@ func (t *Timer) WheelMask() int { return t.wheelMask }
 func (t *Timer) TaskCounter() int64 { return t.taskCounter.Load() }
 
 // AfterFunc adds a function to the timer.
+// `d` must be greater than 0, otherwise it returns `ErrInvalidDelay`.
 func (t *Timer) AfterFunc(d time.Duration, f func()) (*Task, error) {
 	task := NewTask(d).WithJobFunc(f)
 	err := t.AddTask(task)
@@ -143,10 +147,12 @@ func (t *Timer) AfterFunc(d time.Duration, f func()) (*Task, error) {
 }
 
 // AddTask adds a task to the timer.
-// if task delay is less than 0, do nothing.
+// The task's delay must be greater than 0, otherwise it returns `ErrInvalidDelay`.
+// A `Schedule` that has no next run reports a delay of -1, so re-adding an exhausted
+// task reports `ErrInvalidDelay` rather than being silently dropped.
 func (t *Timer) AddTask(task *Task) error {
-	if task.Delay() < 0 {
-		return nil // do nothing
+	if task.Delay() <= 0 {
+		return ErrInvalidDelay
 	}
 	t.rw.RLock()
 	defer t.rw.RUnlock()

@@ -129,6 +129,7 @@ func (t *Task) Delay() time.Duration {
 }
 
 // SetDelay set a new delay duration, the accuracy is milliseconds.
+// It must be greater than 0, otherwise `Timer.AddTask` reports `ErrInvalidDelay`.
 // NOTE: Only effect when re-add to `Timer`, It has no effect on the task being running!
 func (t *Task) SetDelay(d time.Duration) *Task {
 	t.delay.Store(int64(d))

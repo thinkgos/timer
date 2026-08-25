@@ -61,6 +61,37 @@ func Test_Timer_Start_Stop_Restart(t *testing.T) {
 	require.True(t, tm.Started())
 }
 
+func Test_Timer_InvalidDelay(t *testing.T) {
+	tm := NewTimer()
+	tm.Start()
+	defer tm.Stop()
+
+	t.Run("negative", func(t *testing.T) {
+		require.ErrorIs(t, tm.AddTask(NewTask(-time.Second)), ErrInvalidDelay)
+		require.ErrorIs(t, tm.AddDerefTask(NewTask(-time.Second)), ErrInvalidDelay)
+		task, err := tm.AfterFunc(-time.Second, func() {})
+		require.ErrorIs(t, err, ErrInvalidDelay)
+		require.Nil(t, task)
+	})
+	t.Run("zero", func(t *testing.T) {
+		require.ErrorIs(t, tm.AddTask(NewTask(0)), ErrInvalidDelay)
+		_, err := tm.AfterFunc(0, func() {})
+		require.ErrorIs(t, err, ErrInvalidDelay)
+	})
+	t.Run("exhausted schedule", func(t *testing.T) {
+		// a crontab whose expression has no next run reports a delay of -1.
+		task, err := NewCrontabTask("0 0 1 1 * 2000", JobFunc(func() {}))
+		require.NoError(t, err)
+		require.ErrorIs(t, tm.AddTask(task), ErrInvalidDelay)
+	})
+	t.Run("rejected task is not activated", func(t *testing.T) {
+		task := NewTask(-time.Second)
+		require.ErrorIs(t, tm.AddTask(task), ErrInvalidDelay)
+		require.False(t, task.Activated())
+		require.Equal(t, int64(-1), task.Expiry())
+	})
+}
+
 // Test_Timer_ConcurrentCancelAndAdd guards the lock order between `Task.rw` and
 // `Spoke.mu`. `Task.Cancel` takes `Task.rw` then `Spoke.mu`, while the timer
 // goroutine's `Spoke.Flush` -> `Timer.addTaskEntry` -> `taskEntry.cancelled` takes
