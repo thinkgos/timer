@@ -1,47 +1,53 @@
 package timer
 
 import (
+	"sync"
 	"time"
 
 	"github.com/panjf2000/ants/v2"
 )
 
-var pool GoPool = wrapperAnts{}
-var defaultTimer = NewTimer(WithGoPool(pool))
+var (
+	pool         GoPool = wrapperAnts{}
+	defaultOnce  sync.Once
+	defaultTimer *Timer
+)
 
-func init() {
-	defaultTimer.Start()
+// DefaultTimer return the default timer, lazily initialized and started on first call.
+func DefaultTimer() *Timer {
+	defaultOnce.Do(func() {
+		defaultTimer = NewTimer(WithGoPool(pool))
+		defaultTimer.Start()
+	})
+	return defaultTimer
 }
 
-// Timer return the default timer.
-func DefaultTimer() *Timer { return defaultTimer }
-
 // TickMs return Basic time tick milliseconds.
-func TickMs() int64 { return defaultTimer.TickMs() }
+func TickMs() int64 { return DefaultTimer().TickMs() }
 
 // WheelSize return the wheel size.
-func WheelSize() int { return defaultTimer.WheelSize() }
+func WheelSize() int { return DefaultTimer().WheelSize() }
 
 // TaskCounter return the total number of tasks.
-func TaskCounter() int64 { return defaultTimer.TaskCounter() }
+func TaskCounter() int64 { return DefaultTimer().TaskCounter() }
 
 // AfterFunc adds a function to the timer.
-func AfterFunc(d time.Duration, f func()) (*Task, error) { return defaultTimer.AfterFunc(d, f) }
+func AfterFunc(d time.Duration, f func()) (*Task, error) { return DefaultTimer().AfterFunc(d, f) }
 
 // AddTask adds a task to the timer.
-func AddTask(task *Task) error { return defaultTimer.AddTask(task) }
+func AddTask(task *Task) error { return DefaultTimer().AddTask(task) }
 
 // AddDerefTask adds a task from DerefTask to the timer.
-func AddDerefTask(task DerefTask) error { return defaultTimer.AddDerefTask(task) }
+func AddDerefTask(task DerefTask) error { return DefaultTimer().AddDerefTask(task) }
 
 // Started have started or not.
-func Started() bool { return defaultTimer.Started() }
+func Started() bool { return DefaultTimer().Started() }
 
 // Start the timer.
-func Start() { defaultTimer.Start() }
+func Start() { DefaultTimer().Start() }
 
 // Stop the timer.
-func Stop() { defaultTimer.Stop() }
+func Stop() { DefaultTimer().Stop() }
 
 type wrapperAnts struct{}
 

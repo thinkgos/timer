@@ -11,8 +11,8 @@ var _ Job = (*Task)(nil)
 
 // Task timer task.
 type Task struct {
-	delay     atomic.Int64 // delay duration
-	job       Schedule  // the job of future execution
+	delay     atomic.Int64 // delay duration.
+	job       Schedule     // the job of future execution
 	rw        sync.RWMutex // protects following fields.
 	taskEntry *taskEntry   // the taskEntry to which the task belongs.
 }
@@ -56,7 +56,7 @@ func NewCrontabTask(spec string, job Job) (*Task, error) {
 	return NewScheduleTask(j.NextDelay(), j), nil
 }
 
-// NewCrontabTask new task with crontab spec and a function, the job will run periodically.
+// NewCrontabTaskFunc new task with crontab spec and a function, the job will run periodically.
 func NewCrontabTaskFunc(spec string, f func()) (*Task, error) {
 	return NewCrontabTask(spec, JobFunc(f))
 }

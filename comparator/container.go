@@ -18,17 +18,17 @@ type Container[T any] struct {
 }
 
 // Len implement heap.Interface.
-func (c Container[T]) Len() int {
+func (c *Container[T]) Len() int {
 	return len(c.Items)
 }
 
 // Swap implement heap.Interface.
-func (c Container[T]) Swap(i, j int) {
+func (c *Container[T]) Swap(i, j int) {
 	c.Items[i], c.Items[j] = c.Items[j], c.Items[i]
 }
 
 // Less implement heap.Interface.
-func (c Container[T]) Less(i, j int) bool {
+func (c *Container[T]) Less(i, j int) bool {
 	if c.Desc {
 		i, j = j, i
 	}

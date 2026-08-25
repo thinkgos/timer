@@ -84,7 +84,7 @@ type Timer struct {
 	closed      bool                           // true if closed.
 }
 
-// NewTimer new timer instance. default tick is 1 milliseconds, wheel size is 512.
+// NewTimer new timer instance. default tick is 1 milliseconds, wheel size is 128.
 func NewTimer(opts ...Option) *Timer {
 	t := &Timer{
 		tickMs:      DefaultTickMs,
@@ -135,6 +135,7 @@ func (t *Timer) AfterFunc(d time.Duration, f func()) (*Task, error) {
 }
 
 // AddTask adds a task to the timer.
+// if task delay is less than 0, do nothing.
 func (t *Timer) AddTask(task *Task) error {
 	if task.Delay() < 0 {
 		return nil // do nothing

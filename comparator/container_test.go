@@ -16,7 +16,7 @@ func Test_Container_Sort(t *testing.T) {
 	wantDESC := []int{10, 9, 8, 7, 6, 5, 3, 2, 1}
 
 	// asc
-	c1 := Container[int]{
+	c1 := &Container[int]{
 		Items:   slices.Clone(items),
 		Desc:    false,
 		Compare: cmp.Compare[int],
@@ -25,7 +25,7 @@ func Test_Container_Sort(t *testing.T) {
 	require.Equal(t, wantASC, c1.Items)
 
 	// desc
-	c2 := Container[int]{
+	c2 := &Container[int]{
 		Items:   slices.Clone(items),
 		Desc:    true,
 		Compare: cmp.Compare[int],
