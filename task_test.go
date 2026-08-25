@@ -46,13 +46,6 @@ func Test_Task_Job(t *testing.T) {
 	task2.Run()
 }
 
-func Test_Task_RecoverPanic(t *testing.T) {
-	task := NewTaskFunc(100*time.Millisecond, func() {
-		panic("panic")
-	})
-	require.NotPanics(t, task.Run)
-}
-
 func Test_Task_Activated(t *testing.T) {
 	tm := NewTimer()
 	tm.Start()

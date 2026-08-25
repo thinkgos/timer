@@ -1,61 +1,101 @@
 package timer
 
 import (
-	"fmt"
-	"os"
 	"sync"
 	"sync/atomic"
 	"time"
 )
 
-// Job job interface
-type Job interface {
-	Run()
-}
-
-// JobFunc job function
-type JobFunc func()
-
-// Run implement job interface
-func (f JobFunc) Run() { f() }
-
-var emptyJob = JobFunc(func() {})
 var _ DerefTask = (*Task)(nil)
 var _ Job = (*Task)(nil)
 
 // Task timer task.
 type Task struct {
 	delay     atomic.Int64 // delay duration
-	job       Job          // the job of future execution
+	job       Schedule  // the job of future execution
 	rw        sync.RWMutex // protects following fields.
 	taskEntry *taskEntry   // the taskEntry to which the task belongs.
 }
 
-// NewTask new task with delay duration and an empty job, the accuracy is milliseconds.
-func NewTask(d time.Duration) *Task {
-	t := &Task{job: emptyJob}
+// NewScheduleTask new task with delay duration and a schedule job.
+func NewScheduleTask(d time.Duration, sj Schedule) *Task {
+	t := &Task{job: sj}
 	t.delay.Store(int64(d))
 	return t
 }
 
-// NewTaskFunc new task with delay duration and a function job, the accuracy is milliseconds.
-func NewTaskFunc(d time.Duration, f func()) *Task {
-	return NewTask(d).WithJobFunc(f)
+// NewOneshotTask new task with delay duration and a job, the job will run once.
+// see [timer.Oneshot]
+func NewOneshotTask(d time.Duration, job Job) *Task {
+	return NewScheduleTask(d, Oneshot(job))
+}
+
+// NewOneshotTaskFunc new task with delay duration and a function, the function will run once.
+func NewOneshotTaskFunc(d time.Duration, f func()) *Task {
+	return NewOneshotTask(d, JobFunc(f))
+}
+
+// NewPeriodicTask new task with delay duration and a job, the job will run periodically.
+// see [timer.Periodic]
+func NewPeriodicTask(d time.Duration, job Job) *Task {
+	j := Periodic(d, job)
+	return NewScheduleTask(j.NextDelay(), j)
+}
+
+// NewPeriodicTaskFunc new task with delay duration and a function, the job will run periodically.
+func NewPeriodicTaskFunc(d time.Duration, f func()) *Task {
+	return NewPeriodicTask(d, JobFunc(f))
+}
+
+// NewCrontabTask new task with crontab spec and a job, the job will run periodically.
+func NewCrontabTask(spec string, job Job) (*Task, error) {
+	j, err := Crontab(spec, job)
+	if err != nil {
+		return nil, err
+	}
+	return NewScheduleTask(j.NextDelay(), j), nil
+}
+
+// NewCrontabTask new task with crontab spec and a function, the job will run periodically.
+func NewCrontabTaskFunc(spec string, f func()) (*Task, error) {
+	return NewCrontabTask(spec, JobFunc(f))
+}
+
+// NewTask new task with delay duration and an empty job, the accuracy is milliseconds.
+func NewTask(d time.Duration) *Task {
+	return NewScheduleTask(d, emptyJob)
 }
 
 // NewTaskJob new task with delay duration and a job, the accuracy is milliseconds.
+//
+// Deprecated: this value is simply [timer.NewOneshotTask].
 func NewTaskJob(d time.Duration, job Job) *Task {
-	return NewTask(d).WithJob(job)
+	return NewOneshotTask(d, job)
 }
 
-// WithJobFunc with a function job
+// NewTaskFunc new task with delay duration and a function job, the accuracy is milliseconds.
+//
+// Deprecated: this value is simply [timer.NewOneshotTaskFunc].
+func NewTaskFunc(d time.Duration, f func()) *Task {
+	return NewOneshotTaskFunc(d, f)
+}
+
+// WithJobFunc with a function, the function will be wrapped in an OneshotJob.
+//
+// Deprecated: this value is simply [timer.WithScheduleJob(NewOneshotJob(JobFunc(f)))].
 func (t *Task) WithJobFunc(f func()) *Task {
-	t.job = JobFunc(f)
-	return t
+	return t.WithScheduleJob(Oneshot(JobFunc(f)))
 }
 
-// WithJob with a job
+// WithJob with a job, the job will be wrapped in an OneshotJob.
+//
+// Deprecated: this value is simply [timer.WithScheduleJob(NewOneshotJob(j))].
 func (t *Task) WithJob(j Job) *Task {
+	return t.WithScheduleJob(Oneshot(j))
+}
+
+// WithJob with a job, the job will be wrapped in an OneshotJob.
+func (t *Task) WithScheduleJob(j Schedule) *Task {
 	t.job = j
 	return t
 }
@@ -65,11 +105,6 @@ func (t *Task) DerefTask() *Task { return t }
 
 // Run immediate call job. implement Job interface.
 func (t *Task) Run() {
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Fprintf(os.Stderr, "timer: Recovered from panic: %v\n", err)
-		}
-	}()
 	t.job.Run()
 }
 

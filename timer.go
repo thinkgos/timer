@@ -2,6 +2,8 @@ package timer
 
 import (
 	"errors"
+	"fmt"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -134,6 +136,9 @@ func (t *Timer) AfterFunc(d time.Duration, f func()) (*Task, error) {
 
 // AddTask adds a task to the timer.
 func (t *Timer) AddTask(task *Task) error {
+	if task.Delay() < 0 {
+		return nil // do nothing
+	}
 	t.rw.RLock()
 	defer t.rw.RUnlock()
 	if t.closed {
@@ -202,6 +207,20 @@ func (t *Timer) addTaskEntry(te *taskEntry) {
 	// if cancelled cancelled, we ignore the task entry.
 	// if already expired, we run the task job.
 	if t.wheel.add(te) == Result_AlreadyExpired {
-		t.goPool.Go(te.task.Run)
+		task := te.task
+		t.goPool.Go(func() {
+			defer func() {
+				if err := recover(); err != nil {
+					fmt.Fprintf(os.Stderr, "timer: Recovered from panic: %v\n", err)
+				}
+			}()
+			defer func() {
+				if delay := te.task.job.NextDelay(); delay > 0 {
+					te.task.SetDelay(delay)
+					_ = t.AddTask(task)
+				}
+			}()
+			task.Run()
+		})
 	}
 }

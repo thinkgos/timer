@@ -3,6 +3,7 @@ module github.com/thinkgos/timer
 go 1.22
 
 require (
+	github.com/hashicorp/cronexpr v1.1.3
 	github.com/panjf2000/ants/v2 v2.12.1
 	github.com/stretchr/testify v1.12.1
 )
