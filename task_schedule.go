@@ -58,12 +58,11 @@ type PeriodicSchedule struct {
 
 // Periodic returns a periodic Schedule that activates once every duration.
 // Delays of less than a second are not supported (will round up to 1 second).
-// Any fields less than a Second are truncated.
 func Periodic(duration time.Duration, job Job) Schedule {
 	duration = max(duration, time.Second)
 	return PeriodicSchedule{
 		job:      job,
-		duration: duration - time.Duration(duration.Nanoseconds())%time.Second,
+		duration: duration,
 	}
 }
 

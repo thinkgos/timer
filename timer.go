@@ -189,12 +189,13 @@ func (t *Timer) Start() {
 // Stop the timer, graceful shutdown waiting the goroutine until it's stopped.
 func (t *Timer) Stop() {
 	t.rw.Lock()
-	defer t.rw.Unlock()
 	if !t.closed {
 		close(t.quit)
-		t.waitGroup.Wait() // Ensure the goroutine has finished
 		t.closed = true
 	}
+	t.rw.Unlock()
+
+	t.waitGroup.Wait() // wait outside the lock to avoid deadlock with Start() goroutine
 }
 
 func (t *Timer) addToDelayQueue(spoke *Spoke) {

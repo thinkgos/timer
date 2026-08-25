@@ -64,7 +64,7 @@ jobs:
       - name: Unit test
         if: runner.os == 'macOS'
         run: |
-            go test -v -race -ldflags="-linkmode=external" -coverprofile=coverage -covermode=atomic ./...
+          go test -v -race -ldflags="-linkmode=external" -coverprofile=coverage -covermode=atomic ./...
 
       - name: Unit test
         if: runner.os != 'macOS'
