@@ -59,6 +59,16 @@ func (dq *DelayQueue[T]) Add(val T) {
 func (dq *DelayQueue[T]) Take(quit <-chan struct{}) (val T, exit bool) {
 	var phantom T
 
+	// One timer for the whole call, created on the first wait and reset on every
+	// following one. A `Take` waits again each time `Add` pushes a new head, so a
+	// timer per iteration is a needless allocation on a hot path.
+	var t *time.Timer
+	defer func() {
+		if t != nil {
+			t.Stop()
+		}
+	}()
+
 	for {
 		dq.mu.Lock()
 		dq.waiting = false
@@ -73,25 +83,39 @@ func (dq *DelayQueue[T]) Take(quit <-chan struct{}) (val T, exit bool) {
 			case <-quit:
 				return phantom, true
 			}
-		} else {
-			delay := head.Delay()
-			if delay <= 0 {
-				dq.priorityQueue.Pop()
-				dq.mu.Unlock()
-				return head, false
-			}
-			dq.waiting = true
+		}
+
+		delay := head.Delay()
+		if delay <= 0 {
+			dq.priorityQueue.Pop()
 			dq.mu.Unlock()
-			// TODO: try to use t out of for loop, Reuse it!!
-			t := time.NewTimer(time.Duration(delay) * dq.timeUnit)
+			return head, false
+		}
+		dq.waiting = true
+		dq.mu.Unlock()
+
+		d := time.Duration(delay) * dq.timeUnit
+		if t == nil {
+			t = time.NewTimer(d)
+		} else {
+			t.Reset(d)
+		}
+		select {
+		case <-quit:
+			return phantom, true
+		case <-dq.notify:
+		case <-t.C:
+		}
+		// Drain the timer so it is reusable by the next `Reset`. `Stop` reports false
+		// once the timer has fired, and the value may still be sitting in the channel
+		// if we woke up on `notify` instead. The drain is non-blocking on purpose: a
+		// fire that has not landed in the channel yet would block a receive forever,
+		// and missing it only costs one extra loop, which just re-peeks the queue.
+		if !t.Stop() {
 			select {
-			case <-quit:
-				t.Stop()
-				return phantom, true
-			case <-dq.notify:
 			case <-t.C:
+			default:
 			}
-			t.Stop()
 		}
 	}
 }

@@ -2,6 +2,7 @@ package timer
 
 import (
 	"fmt"
+	"math"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -31,6 +32,13 @@ func Test_Timer_Init(t *testing.T) {
 		})
 		require.Panics(t, func() {
 			_ = NewTimer(WithWheelSize(-1))
+		})
+		require.Panics(t, func() {
+			_ = NewTimer(WithWheelSize(0))
+		})
+		require.Panics(t, func() {
+			// no power of 2 fits, `NextPowOf2` reports 0 rather than overflowing.
+			_ = NewTimer(WithWheelSize(math.MaxInt))
 		})
 		require.NotPanics(t, func() {
 			_ = NewTimer(WithGoPool(nil))

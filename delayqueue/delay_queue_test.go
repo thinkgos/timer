@@ -1,6 +1,7 @@
 package delayqueue
 
 import (
+	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -138,6 +139,34 @@ func Test_DelayQueue_Quit_Empty_Begin(t *testing.T) {
 	require.False(t, exit)
 	assert.Equal(t, "d2", v2.name)
 	assert.LessOrEqual(t, v2.Delay(), int64(0))
+}
+
+// Test_DelayQueue_Take_Reuse_Timer covers the multi-wait path of `Take`. Every `Add`
+// of a new head wakes the waiter up, so a single `Take` call resets its timer many
+// times. Whatever happens to the timer, `Take` must never hand out an element before
+// its delay has elapsed, and must not miss the last deadline it waited on.
+func Test_DelayQueue_Take_Reuse_Timer(t *testing.T) {
+	const rounds = 20
+
+	dq := NewDelayQueue(compareDelay)
+	dq.Add(&delay{"tail", time.Now().UnixMilli() + 1000})
+
+	go func() {
+		// each new element is the earliest one, so each `Add` notifies the waiter and
+		// sends `Take` around the loop again with a shorter deadline.
+		for i := rounds; i > 0; i-- {
+			time.Sleep(2 * time.Millisecond)
+			dq.Add(&delay{fmt.Sprintf("head-%d", i), time.Now().UnixMilli() + int64(20*i)})
+		}
+	}()
+
+	begin := time.Now()
+	got, exit := dq.Take(nil)
+	require.False(t, exit)
+	require.Equal(t, "head-1", got.name)
+	// not handed out early, and not overslept either.
+	assert.LessOrEqual(t, got.Delay(), int64(0))
+	assert.Less(t, time.Since(begin), time.Second)
 }
 
 func Test_DelayQueue_Poll(t *testing.T) {
