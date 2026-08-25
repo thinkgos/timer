@@ -62,12 +62,14 @@ jobs:
             ${{ runner.os }}-${{ matrix.go-version }}-go-ci-
 
       - name: Unit test
+        if: runner.os == 'macOS'
         run: |
-          if [ "${{ runner.os }}" = "macOS" ]; then
             go test -v -race -ldflags="-linkmode=external" -coverprofile=coverage -covermode=atomic ./...
-          else
-            go test -v -race -coverprofile=coverage -covermode=atomic ./...
-          fi
+
+      - name: Unit test
+        if: runner.os != 'macOS'
+        run: |
+          go test -v -race -coverprofile=coverage -covermode=atomic ./...
 
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest' && matrix.go-version == '1.27.x'
