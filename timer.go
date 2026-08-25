@@ -88,10 +88,10 @@ type Timer struct {
 	taskCounter atomic.Int64                   // the total number of tasks.
 	delayQueue  *delayqueue.DelayQueue[*Spoke] // delay queue, the priority queue use spoke's expiration time as `cmp`.
 	goPool      GoPool                         // goroutine pool
-	waitGroup   sync.WaitGroup                 // ensure the goroutine has finished.
 	rw          sync.RWMutex                   // protects following fields.
 	wheel       *TimingWheel                   // timing wheel, concurrent add task(read-lock) and advance clock only one(write-lock).
-	quit        chan struct{}                  // of chan struct{}, created when first start.
+	quit        chan struct{}                  // closed to tell the current run's goroutine to exit, created on each start.
+	done        chan struct{}                  // closed by the current run's goroutine when it has exited, created on each start.
 	closed      bool                           // true if closed.
 }
 
@@ -181,12 +181,15 @@ func (t *Timer) Start() {
 	defer t.rw.Unlock()
 	if t.closed {
 		t.closed = false
-		t.quit = make(chan struct{})
-		t.waitGroup.Add(1)
+		// Each run owns its own pair of channels, and the goroutine captures them
+		// instead of reading `Timer.quit`/`Timer.done`, so a later `Start` replacing
+		// the fields never disturbs a goroutine that is still winding down.
+		quit, done := make(chan struct{}), make(chan struct{})
+		t.quit, t.done = quit, done
 		go func() {
-			defer t.waitGroup.Done()
+			defer close(done)
 			for {
-				spoke, exit := t.delayQueue.Take(t.quit)
+				spoke, exit := t.delayQueue.Take(quit)
 				if exit {
 					break
 				}
@@ -204,13 +207,20 @@ func (t *Timer) Start() {
 // Stop the timer, graceful shutdown waiting the goroutine until it's stopped.
 func (t *Timer) Stop() {
 	t.rw.Lock()
+	done := t.done // the run we are stopping, captured under the same lock as `close(t.quit)`.
 	if !t.closed {
 		close(t.quit)
 		t.closed = true
 	}
 	t.rw.Unlock()
 
-	t.waitGroup.Wait() // wait outside the lock to avoid deadlock with Start() goroutine
+	// Wait outside the lock, the goroutine needs `Timer.rw` to finish its current tick.
+	// That window lets a concurrent `Start` begin a new run, which is why the run to
+	// wait for is a captured channel rather than a `sync.WaitGroup` shared across runs:
+	// re-`Add`ing to a WaitGroup that is being `Wait`ed on panics.
+	if done != nil { // nil until the first start.
+		<-done
+	}
 }
 
 func (t *Timer) addToDelayQueue(spoke *Spoke) {

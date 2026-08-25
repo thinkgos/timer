@@ -61,6 +61,77 @@ func Test_Timer_Start_Stop_Restart(t *testing.T) {
 	require.True(t, tm.Started())
 }
 
+// Test_Timer_ConcurrentStartStop guards the start/stop handshake. `Stop` must wait
+// outside `Timer.rw`, because the goroutine needs that lock to finish its current
+// tick, and that window lets a concurrent `Start` begin a new run. Tracking runs with
+// a single `sync.WaitGroup` breaks there two ways: `Stop` waits on the run `Start`
+// just added and blocks forever, or the `Add` races the `Wait` and panics with
+// "sync: WaitGroup misuse: Add called concurrently with Wait". see `Timer.Stop`.
+func Test_Timer_ConcurrentStartStop(t *testing.T) {
+	const (
+		rounds      = 300
+		workerCount = 4
+	)
+
+	for i := 0; i < rounds; i++ {
+		tm := NewTimer(WithTickMs(1), WithWheelSize(4))
+		tm.Start()
+		require.NoError(t, tm.AddTask(NewPeriodicTaskFunc(time.Second, func() {})))
+
+		// release all workers at once, to land inside the unlocked window of `Stop`.
+		begin := make(chan struct{})
+		settled := make(chan struct{})
+		go func() {
+			defer close(settled)
+			wg := sync.WaitGroup{}
+			for w := 0; w < workerCount; w++ {
+				wg.Add(1)
+				go func(w int) {
+					defer wg.Done()
+					<-begin
+					if w%2 == 0 {
+						tm.Stop()
+					} else {
+						tm.Start()
+					}
+				}(w)
+			}
+			wg.Wait()
+			tm.Stop()
+		}()
+
+		close(begin)
+		select {
+		case <-settled:
+		case <-time.After(10 * time.Second):
+			t.Fatalf("round %d: Stop did not return, it is waiting on a run that Start replaced", i)
+		}
+		require.False(t, tm.Started())
+	}
+}
+
+// Test_Timer_StopIdempotent covers `Stop` before any start (`Timer.done` is still
+// nil) and repeated `Stop` on an already stopped timer.
+func Test_Timer_StopIdempotent(t *testing.T) {
+	tm := NewTimer()
+	require.False(t, tm.Started())
+	tm.Stop() // never started, must not block nor panic.
+	tm.Stop()
+
+	tm.Start()
+	require.True(t, tm.Started())
+	tm.Stop()
+	tm.Stop()
+	require.False(t, tm.Started())
+
+	// a stopped timer can be restarted and stopped again.
+	tm.Start()
+	require.True(t, tm.Started())
+	require.NoError(t, tm.AddTask(NewTask(time.Millisecond)))
+	tm.Stop()
+	require.False(t, tm.Started())
+}
+
 func Test_Timer_InvalidDelay(t *testing.T) {
 	tm := NewTimer()
 	tm.Start()
