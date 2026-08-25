@@ -12,7 +12,7 @@ var _ Job = (*Task)(nil)
 // Task timer task.
 type Task struct {
 	delay     atomic.Int64 // delay duration.
-	job       Schedule     // the job of future execution
+	job       Schedule     // the job of future execution, assign only at initialization. @Task.WithScheduleJob
 	rw        sync.RWMutex // protects following fields.
 	taskEntry *taskEntry   // the taskEntry to which the task belongs.
 }
@@ -94,7 +94,12 @@ func (t *Task) WithJob(j Job) *Task {
 	return t.WithScheduleJob(Oneshot(j))
 }
 
-// WithJob with a job, the job will be wrapped in an OneshotJob.
+// WithScheduleJob with a schedule job.
+//
+// NOTE: it is NOT safe for concurrent use, assign the job only at initialization,
+// before the task is added to a `Timer`. Once added, the job is read from the
+// goroutine pool (@Task.Run, @Timer.addTaskEntry), so assigning it afterwards is a
+// data race. `Task.job` therefore needs no lock. To change the job, use a new task.
 func (t *Task) WithScheduleJob(j Schedule) *Task {
 	t.job = j
 	return t

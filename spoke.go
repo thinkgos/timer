@@ -71,15 +71,31 @@ func (sp *Spoke) remove(te *taskEntry) {
 	sp.taskCounter.Add(-1)
 }
 
-// Flush all task entries and apply the supplied function to each of them
+// Flush all task entries and apply the supplied function to each of them.
+//
+// NOTE: `f` is applied OUTSIDE of the spoke's lock, on purpose.
+// `f` is `Timer.addTaskEntry`, which acquires `Task.rw` (@taskEntry.cancelled),
+// while `Task.Cancel` acquires `Task.rw` before this spoke's lock (@taskEntry.remove).
+// Applying `f` under `sp.mu` inverts that order and deadlocks.
+// It is the same reason `Spoke.Add` calls `taskEntry.remove` outside of the lock.
 func (sp *Spoke) Flush(f func(*taskEntry)) {
+	var entries []*taskEntry
+
 	sp.mu.Lock()
-	defer sp.mu.Unlock()
+	// Detach every entry first. Once `taskEntry.list` is nil the entry no longer
+	// belongs to this spoke, so a concurrent `Task.Cancel` will not contend on `sp.mu`.
 	for e := sp.root.next; e != &sp.root; e = sp.root.next {
 		sp.remove(e)
+		entries = append(entries, e)
+	}
+	// Reset the expiration before releasing the lock, so that a re-inserted task
+	// landing back on this spoke observes a changed expiration and gets enqueued.
+	sp.SetExpiration(-1)
+	sp.mu.Unlock()
+
+	for _, e := range entries {
 		f(e)
 	}
-	sp.SetExpiration(-1)
 }
 
 // SetExpiration set the spoke's expiration time

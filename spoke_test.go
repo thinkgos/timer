@@ -52,3 +52,25 @@ func Test_Spoke_Task(t *testing.T) {
 	})
 	require.Equal(t, int64(0), taskCounter.Load())
 }
+
+// Test_Spoke_Flush_ApplyOutOfLock asserts `Spoke.Flush` releases the spoke's lock
+// before applying the supplied function. Applying it under the lock inverts the
+// `Task.rw` -> `Spoke.mu` order taken by `Task.Cancel` and deadlocks. see `Spoke.Flush`.
+func Test_Spoke_Flush_ApplyOutOfLock(t *testing.T) {
+	spoke := NewSpoke(&atomic.Int64{})
+	spoke.Add(newTaskEntry(NewTask(101 * time.Millisecond)))
+	spoke.Add(newTaskEntry(NewTask(102 * time.Millisecond)))
+
+	spoke.Flush(func(te *taskEntry) {
+		unlocked := make(chan struct{})
+		go func() {
+			defer close(unlocked)
+			spoke.Remove(te) // contends on `Spoke.mu`, as `Task.Cancel` would.
+		}()
+		select {
+		case <-unlocked:
+		case <-time.After(time.Second):
+			t.Error("Spoke.Flush still holds the lock while applying the function")
+		}
+	})
+}

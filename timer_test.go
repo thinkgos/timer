@@ -2,6 +2,8 @@ package timer
 
 import (
 	"fmt"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -57,6 +59,72 @@ func Test_Timer_Start_Stop_Restart(t *testing.T) {
 	time.Sleep(time.Millisecond * 100)
 	tm.Start()
 	require.True(t, tm.Started())
+}
+
+// Test_Timer_ConcurrentCancelAndAdd guards the lock order between `Task.rw` and
+// `Spoke.mu`. `Task.Cancel` takes `Task.rw` then `Spoke.mu`, while the timer
+// goroutine's `Spoke.Flush` -> `Timer.addTaskEntry` -> `taskEntry.cancelled` takes
+// `Task.rw`. Applying the flush function under `Spoke.mu` inverts the order and
+// deadlocks the timer goroutine. see `Spoke.Flush`.
+func Test_Timer_ConcurrentCancelAndAdd(t *testing.T) {
+	const (
+		taskCount   = 200
+		workerCount = 8
+		stressFor   = 2 * time.Second
+	)
+
+	tm := NewTimer(WithTickMs(1), WithWheelSize(4))
+	tm.Start()
+
+	fired := &atomic.Int64{}
+	tasks := make([]*Task, taskCount)
+	for i := range tasks {
+		tasks[i] = NewPeriodicTaskFunc(time.Second, func() { fired.Add(1) })
+		tasks[i].SetDelay(time.Millisecond)
+		require.NoError(t, tm.AddTask(tasks[i]))
+	}
+
+	done := make(chan struct{})
+	finished := make(chan struct{})
+	go func() {
+		defer close(finished)
+		wg := sync.WaitGroup{}
+		for w := 0; w < workerCount; w++ {
+			wg.Add(1)
+			go func(w int) {
+				defer wg.Done()
+				for {
+					select {
+					case <-done:
+						return
+					default:
+					}
+					for i := w; i < taskCount; i += workerCount {
+						tasks[i].Cancel()
+						tasks[i].SetDelay(time.Millisecond)
+						_ = tm.AddTask(tasks[i])
+					}
+				}
+			}(w)
+		}
+		wg.Wait()
+	}()
+
+	time.Sleep(stressFor)
+	close(done)
+	select {
+	case <-finished:
+	case <-time.After(10 * time.Second):
+		t.Fatal("deadlock: Task.Cancel and Spoke.Flush deadlocked on Task.rw/Spoke.mu")
+	}
+
+	require.NotZero(t, fired.Load())
+	// every added task entry is eventually removed exactly once, so once the
+	// in-flight entries are flushed the counter settles back to the live task count.
+	require.Eventually(t, func() bool {
+		return tm.TaskCounter() == taskCount
+	}, 5*time.Second, 50*time.Millisecond)
+	tm.Stop()
 }
 
 func ExampleTimer() {

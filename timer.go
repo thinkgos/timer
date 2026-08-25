@@ -24,8 +24,16 @@ var ErrClosed = errors.New("timer: use of closed timer")
 // goroutinePool is a reusable go pool.
 var goroutinePool = goroutine{}
 
-// GoPool goroutine pool.
+// GoPool goroutine pool, used to run the job of an expired task.
+//
+// NOTE: `Go` MUST NOT block. `Timer.addTaskEntry` submits the job while holding
+// `Timer.rw`, and the job's re-schedule path calls `Timer.AddTask`, which needs
+// `Timer.rw` too. So a bounded pool that blocks when full deadlocks the timer:
+// the submit never returns, so the lock is never released, so no running job can
+// ever complete and free a slot. An implementation backed by a bounded pool must
+// fall back to a bare `go f()` on submit failure, as `wrapperAnts` does.
 type GoPool interface {
+	// Go run f. It must return without waiting for f, and must never block.
 	Go(f func())
 }
 
@@ -62,7 +70,7 @@ func WithWheelSize(size int) Option {
 	}
 }
 
-// WithGoPool set goroutine pool.
+// WithGoPool set goroutine pool, `p` must never block on submit. see [GoPool].
 func WithGoPool(p GoPool) Option {
 	return func(t *Timer) {
 		t.goPool = p
@@ -206,7 +214,7 @@ func (t *Timer) addToDelayQueue(spoke *Spoke) {
 // NOTE: should be call when `Timer.rw` lock.
 func (t *Timer) addTaskEntry(te *taskEntry) {
 	// if success, we do not need deal the task entry, because it has be added to the timing wheel.
-	// if cancelled cancelled, we ignore the task entry.
+	// if cancelled, we ignore the task entry.
 	// if already expired, we run the task job.
 	if t.wheel.add(te) == Result_AlreadyExpired {
 		task := te.task
