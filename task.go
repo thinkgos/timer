@@ -114,6 +114,15 @@ func (t *Task) Run() {
 }
 
 // Cancel the task.
+//
+// NOTE: it only cancels a oneshot task (@timer.Oneshot). It unlinks the task from
+// the wheel, nothing more, so it wins only while the task is still waiting there.
+// A recurring task (@timer.Periodic, @timer.Crontab) re-schedules itself once the
+// timer has taken it as expired: the job runs on the goroutine pool and re-adds the
+// task from there (@Timer.addTaskEntry), regardless of this call. So cancelling a
+// recurring task stops it only if it lands before that hand-off, and it keeps firing
+// otherwise. To stop a recurring task for good, have its `Schedule.NextDelay` report
+// a value <= 0, or stop the whole `Timer`.
 func (t *Task) Cancel() {
 	t.rw.Lock()
 	defer t.rw.Unlock()
