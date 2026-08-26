@@ -49,7 +49,7 @@ func main() {
 	}()
 
 	addr := ":9990"
-	log.Printf("http stated '%v'\n", addr)
+	log.Printf("http started '%v'\n", addr)
 	log.Println(http.ListenAndServe(addr, nil))
 }
 

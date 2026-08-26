@@ -24,12 +24,10 @@ func (d delay) Delay() int64 {
 }
 
 func compareDelay(v1 *delay, v2 *delay) int {
-	vv2 := v2
-
-	if v1.Value() < vv2.Value() {
+	if v1.Value() < v2.Value() {
 		return -1
 	}
-	if v1.Value() > vv2.Value() {
+	if v1.Value() > v2.Value() {
 		return 1
 	}
 	return 0
