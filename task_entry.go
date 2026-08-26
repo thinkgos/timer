@@ -20,14 +20,31 @@ type taskEntry struct {
 }
 
 func newTaskEntry(task *Task) *taskEntry {
+	now := time.Now()
+	nowMs := now.UnixMilli()
+	nowFrac := now.UnixNano() - nowMs*1e6
+	delay := task.Delay()
+	delayMs := delay.Milliseconds()
+	delayFrac := delay.Nanoseconds() - delayMs*1e6
+	expirationMs := nowMs + delayMs + (nowFrac+delayFrac+1e6-1)/1e6
 	te := &taskEntry{
 		task: task,
-		// expireAtMs returns the due time (now + delay) rounded up to the next whole
+		// expirationMs returns the due time (now + delay) rounded up to the next whole
 		// millisecond, so a task never fires before its delay has fully elapsed.
 		// Truncating instead made a fractional delay fire up to one tick early, and a
 		// sub-millisecond delay expire in the same millisecond it was added, so
 		// `TimingWheel.add` judged it already expired and ran it immediately.
-		expirationMs: (time.Now().UnixNano() + int64(task.Delay()) + int64(time.Millisecond) - 1) / int64(time.Millisecond),
+		//
+		// the absolute expiration, in Unix milliseconds, of a task
+		// scheduled `delay` from now, rounded up to the next whole millisecond.
+		// It is deliberately not computed as a single (time.Now().UnixNano() + delay)/ms:
+		// for a delay beyond roughly 236 years the nanosecond sum overflows int64 and wraps
+		// negative, and a negative `expirationMs` is treated as already-expired by
+		// `TimingWheel.add`, which fires the task immediately. Splitting both `now` and
+		// `delay` into a whole-millisecond part and a sub-millisecond remainder keeps every
+		// intermediate value small, so the result is exact across the full range of
+		// `time.Duration` (up to ~292 years).
+		expirationMs: expirationMs,
 	}
 	task.setBelongTo(te)
 	return te

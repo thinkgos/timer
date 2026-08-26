@@ -244,10 +244,7 @@ func (t *Timer) addTaskEntry(te *taskEntry) {
 				// `Task.Cancel` clears it, and re-adding the task with a fresh entry
 				// replaces it. Either way a stale cycle must not resurrect the task.
 				// Check it first, so a cancelled task never pays for `NextDelay`.
-				if !te.task.isBelongTo(te) {
-					return
-				}
-				if delay := te.task.job.NextDelay(); delay > 0 {
+				if delay := te.task.job.NextDelay(); delay > 0 && te.task.isBelongTo(te) {
 					te.task.SetDelay(delay)
 					_ = t.AddTask(task)
 				}

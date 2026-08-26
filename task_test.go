@@ -89,6 +89,25 @@ func Test_Task_Expiry(t *testing.T) {
 	require.True(t, task.ExpiryAt().IsZero())
 }
 
+// Test_TaskEntry_MaxDelay_NoOverflow guards the expiration arithmetic against
+// int64 overflow: a delay at the top of `time.Duration` (≈292 years) must still
+// produce a large positive expiration, not a negative one, which `TimingWheel.add`
+// would read as already-expired and fire immediately.
+func Test_TaskEntry_MaxDelay_NoOverflow(t *testing.T) {
+	tm := NewTimer(WithTickMs(1), WithWheelSize(8))
+	tm.Start()
+	defer tm.Stop()
+
+	var fired atomic.Int64
+	task := NewTask(time.Duration(1<<63 - 1)).WithJobFunc(func() { fired.Add(1) })
+	require.NoError(t, tm.AddTask(task))
+
+	require.Greater(t, task.Expiry(), time.Now().UnixMilli(),
+		"a max-duration task must expire far in the future, not in the past")
+	time.Sleep(20 * time.Millisecond)
+	require.Zero(t, fired.Load(), "a max-duration task must not fire immediately")
+}
+
 // quickPeriodic re-schedules every millisecond, bypassing the one-second floor of
 // [timer.Periodic] so the cancellation test below can run fast.
 type quickPeriodic struct {
