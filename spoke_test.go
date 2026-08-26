@@ -1,6 +1,7 @@
 package timer
 
 import (
+	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -53,6 +54,38 @@ func Test_Spoke_Task(t *testing.T) {
 	require.Equal(t, int64(0), taskCounter.Load())
 }
 
+// Test_Spoke_Flush_ReinsertDuringWalk guards the chain walk in `Spoke.Flush`. The
+// detached chain is the work list, so the walk must read an entry's successor BEFORE
+// applying the function: the function re-inserts the entry (@Timer.addTaskEntry ->
+// @Spoke.Add), and `Spoke.pushBack` overwrites the entry's links. Reading the
+// successor afterwards walks into the spoke the entry was just re-inserted into,
+// which truncates the flush. Re-inserting into the very spoke being flushed is the
+// worst case, and the one this test pins down.
+func Test_Spoke_Flush_ReinsertDuringWalk(t *testing.T) {
+	const taskCount = 64
+
+	taskCounter := &atomic.Int64{}
+	spoke := NewSpoke(taskCounter)
+	want := make([]*taskEntry, 0, taskCount)
+	for i := 0; i < taskCount; i++ {
+		te := newTaskEntry(NewTask(time.Duration(100+i) * time.Millisecond))
+		want = append(want, te)
+		spoke.Add(te)
+	}
+	require.Equal(t, int64(taskCount), taskCounter.Load())
+
+	got := make([]*taskEntry, 0, taskCount)
+	spoke.Flush(func(te *taskEntry) {
+		got = append(got, te)
+		spoke.Add(te) // re-insert into the spoke being flushed.
+	})
+
+	// every entry visited exactly once, in insertion order, and all of them landed
+	// back on the spoke rather than being lost with a truncated chain.
+	require.Equal(t, want, got)
+	require.Equal(t, int64(taskCount), taskCounter.Load())
+}
+
 // Test_Spoke_Flush_ApplyOutOfLock asserts `Spoke.Flush` releases the spoke's lock
 // before applying the supplied function. Applying it under the lock inverts the
 // `Task.rw` -> `Spoke.mu` order taken by `Task.Cancel` and deadlocks. see `Spoke.Flush`.
@@ -73,4 +106,28 @@ func Test_Spoke_Flush_ApplyOutOfLock(t *testing.T) {
 			t.Error("Spoke.Flush still holds the lock while applying the function")
 		}
 	})
+}
+
+func Benchmark_Spoke_Flush(b *testing.B) {
+	for _, taskCount := range []int{1, 16, 256, 4096} {
+		b.Run(fmt.Sprintf("tasks-%d", taskCount), func(b *testing.B) {
+			spoke := NewSpoke(&atomic.Int64{})
+			entries := make([]*taskEntry, taskCount)
+			for i := range entries {
+				entries[i] = newTaskEntry(NewTask(time.Second))
+			}
+			noop := func(*taskEntry) {}
+
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				b.StopTimer()
+				for _, te := range entries {
+					spoke.Add(te)
+				}
+				b.StartTimer()
+				spoke.Flush(noop)
+			}
+		})
+	}
 }

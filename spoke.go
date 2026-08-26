@@ -78,23 +78,45 @@ func (sp *Spoke) remove(te *taskEntry) {
 // while `Task.Cancel` acquires `Task.rw` before this spoke's lock (@taskEntry.remove).
 // Applying `f` under `sp.mu` inverts that order and deadlocks.
 // It is the same reason `Spoke.Add` calls `taskEntry.remove` outside of the lock.
+//
+// NOTE: the detached chain itself is the work list, so a flush allocates nothing.
+// That is also why the walk does not reuse `Spoke.remove`: it clears `prev`/`next`,
+// which are the only handle on the entries still to be visited, and it writes
+// `e.prev.next`, which for the chain's head is `sp.root.next`, a write to the
+// sentinel outside the lock. The walk touches only `e`'s own fields, and compares
+// against `&sp.root` without ever reading through it.
+//
+// NOTE: clearing an entry's links outside the lock is safe only because nothing can
+// re-insert a chain entry behind the walk's back. `Spoke.Add` is reachable only from
+// `Timer.addTaskEntry`, whose callers are this flush itself (same goroutine, and only
+// for the entry it is currently visiting) and `Timer.AddTask`, which always passes a
+// fresh `newTaskEntry` and is locked out of `Timer.rw` while the flush runs. Adding a
+// caller that re-inserts an entry the flush still holds would leave that entry in the
+// ring with nil links, and the next `Spoke.remove` would dereference them.
 func (sp *Spoke) Flush(f func(*taskEntry)) {
-	var entries []*taskEntry
-
 	sp.mu.Lock()
-	// Detach every entry first. Once `taskEntry.list` is nil the entry no longer
-	// belongs to this spoke, so a concurrent `Task.Cancel` will not contend on `sp.mu`.
-	for e := sp.root.next; e != &sp.root; e = sp.root.next {
-		sp.remove(e)
-		entries = append(entries, e)
+	// Splice the whole chain off the sentinel in one step, then reset the sentinel so
+	// the spoke reads as empty. The chain keeps its links, and its ends keep pointing
+	// at `&sp.root`, which the walk below only ever compares against, never follows.
+	first := sp.root.next
+	sp.root.next, sp.root.prev = &sp.root, &sp.root
+	// Detach every entry logically. Once `taskEntry.list` is nil the entry no longer
+	// belongs to this spoke, so a concurrent `Task.Cancel` will not contend on `sp.mu`
+	// and, from here on, nothing but the walk below touches the chain's links.
+	for e := first; e != &sp.root; e = e.next {
+		e.list.Store(nil)
+		sp.taskCounter.Add(-1)
 	}
 	// Reset the expiration before releasing the lock, so that a re-inserted task
 	// landing back on this spoke observes a changed expiration and gets enqueued.
 	sp.SetExpiration(-1)
 	sp.mu.Unlock()
 
-	for _, e := range entries {
+	for e := first; e != &sp.root; {
+		next := e.next            // `f` may re-insert `e`, which overwrites its links.
+		e.next, e.prev = nil, nil // avoid memory leaks
 		f(e)
+		e = next
 	}
 }
 
