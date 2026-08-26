@@ -32,6 +32,11 @@ func NewDelayQueue[T Delayed](cmp comparator.Comparable[T]) *DelayQueue[T] {
 }
 
 // TimeUnit set time unit.
+//
+// NOTE: it is only allowed to be called at initialization, before any `Take` may
+// run. `Take` reads the time unit without holding the queue's lock, so calling this
+// while a `Take` runs concurrently is a data race. The timer's own queue keeps the
+// default of one millisecond and never calls this method.
 func (dq *DelayQueue[T]) TimeUnit(timeUnit time.Duration) *DelayQueue[T] {
 	dq.timeUnit = timeUnit
 	return dq
