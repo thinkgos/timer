@@ -21,8 +21,13 @@ type taskEntry struct {
 
 func newTaskEntry(task *Task) *taskEntry {
 	te := &taskEntry{
-		task:         task,
-		expirationMs: int64(task.Delay()/time.Millisecond) + time.Now().UnixMilli(),
+		task: task,
+		// expireAtMs returns the due time (now + delay) rounded up to the next whole
+		// millisecond, so a task never fires before its delay has fully elapsed.
+		// Truncating instead made a fractional delay fire up to one tick early, and a
+		// sub-millisecond delay expire in the same millisecond it was added, so
+		// `TimingWheel.add` judged it already expired and ran it immediately.
+		expirationMs: (time.Now().UnixNano() + int64(task.Delay()) + int64(time.Millisecond) - 1) / int64(time.Millisecond),
 	}
 	task.setBelongTo(te)
 	return te

@@ -71,10 +71,16 @@ func Test_Task_Expiry(t *testing.T) {
 	err := tm.AddTask(task)
 	require.Nil(t, err)
 
+	// `newTaskEntry` samples `time.Now()` on its own and rounds the due time up to
+	// the next whole millisecond (@expireAtMs), so the reported expiry is the floor
+	// of the true due time at the earliest, and one millisecond later at most when
+	// the two samples straddle a millisecond boundary. It can never be earlier.
 	wantExpiryMs := expiryAt.UnixMilli()
 	wantExpiryAt := time.UnixMilli(wantExpiryMs)
-	require.Equal(t, wantExpiryMs, task.Expiry())
-	require.Equal(t, wantExpiryAt, task.ExpiryAt())
+	require.GreaterOrEqual(t, task.Expiry(), wantExpiryMs)
+	require.LessOrEqual(t, task.Expiry(), wantExpiryMs+1)
+	require.GreaterOrEqual(t, task.ExpiryAt(), wantExpiryAt)
+	require.LessOrEqual(t, task.ExpiryAt(), wantExpiryAt.Add(time.Millisecond))
 
 	time.Sleep(time.Millisecond * 20)
 	require.Equal(t, int64(-1), task.Expiry())
