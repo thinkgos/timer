@@ -16,8 +16,8 @@ func Test_DefaultTimer(t *testing.T) {
 }
 
 func ExampleDefaultTimer() {
-	fmt.Println(Started())
 	Start()
+	fmt.Println(Started())
 	_, _ = AfterFunc(100*time.Millisecond, func() {
 		fmt.Println(100)
 	})

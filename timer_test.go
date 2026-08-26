@@ -214,6 +214,10 @@ func Test_Timer_ConcurrentCancelAndAdd(t *testing.T) {
 						tasks[i].SetDelay(time.Millisecond)
 						_ = tm.AddTask(tasks[i])
 					}
+					// Pace the workers: without this they re-arm every task's 1ms
+					// delay faster than it can elapse, so no task ever fires and the
+					// `fired` assertion below is a coin flip (~93% fail on this box).
+					time.Sleep(200 * time.Microsecond)
 				}
 			}(w)
 		}
