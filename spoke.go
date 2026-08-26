@@ -103,9 +103,25 @@ func (sp *Spoke) Flush(f func(*taskEntry)) {
 	// Detach every entry logically. Once `taskEntry.list` is nil the entry no longer
 	// belongs to this spoke, so a concurrent `Task.Cancel` will not contend on `sp.mu`
 	// and, from here on, nothing but the walk below touches the chain's links.
-	for e := first; e != &sp.root; e = e.next {
+	//
+	// The successor is read BEFORE the entry is detached, on purpose: while `e.list`
+	// still reports this spoke, the only way to reach `e.next` is `Spoke.remove`, which
+	// needs `sp.mu`. Reading it after the store leaves it unprotected, and a `Spoke.Add`
+	// of `e` onto another spoke, which takes only that spoke's lock, could redirect this
+	// loop into a live ring and detach entries that are not ours.
+	detached := int64(0)
+	for e := first; e != &sp.root; {
+		next := e.next
 		e.list.Store(nil)
-		sp.taskCounter.Add(-1)
+		detached++
+		e = next
+	}
+	// One update instead of one per entry: the counter is shared by every spoke of every
+	// wheel (@Timer.taskCounter), so the whole flush should touch it once, and not at
+	// all when the spoke came up empty, which it does whenever every task on it was
+	// cancelled before it expired.
+	if detached != 0 {
+		sp.taskCounter.Add(-detached)
 	}
 	// Reset the expiration before releasing the lock, so that a re-inserted task
 	// landing back on this spoke observes a changed expiration and gets enqueued.
