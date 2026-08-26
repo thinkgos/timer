@@ -2,8 +2,7 @@ package timer
 
 import (
 	"errors"
-	"fmt"
-	"os"
+	"log/slog"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -237,7 +236,7 @@ func (t *Timer) addTaskEntry(te *taskEntry) {
 		t.goPool.Go(func() {
 			defer func() {
 				if err := recover(); err != nil {
-					fmt.Fprintf(os.Stderr, "timer: Recovered from panic: %v\n", err)
+					slog.Error("timer: Recovered from panic", "err", err)
 				}
 			}()
 			defer func() {
