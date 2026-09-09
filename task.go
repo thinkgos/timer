@@ -17,6 +17,14 @@ type Task struct {
 	taskEntry *taskEntry   // the taskEntry to which the task belongs.
 }
 
+// MustTask returns the task if the error is nil, otherwise panics.
+func MustTask(t *Task, err error) *Task {
+	if err != nil {
+		panic(err)
+	}
+	return t
+}
+
 // NewScheduleTask new task with delay duration and a schedule job.
 func NewScheduleTask(d time.Duration, sj Schedule) *Task {
 	t := &Task{job: sj}
